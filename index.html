@@ -2060,6 +2060,17 @@
       try {
         if (forcePull) {
           const data = await pullFromGoogleSheet(url);
+          if (data === null) {
+            await fetch(url, {
+              method: 'POST',
+              mode: 'no-cors',
+              headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+              body: JSON.stringify(appData)
+            });
+            showToast('Cloud sheet was empty. Sent this device’s data to start syncing. ☁️', '☁️');
+            return;
+          }
+
           if (!data || !Array.isArray(data.kids)) {
             throw new Error('Sync endpoint returned invalid app data');
           }
