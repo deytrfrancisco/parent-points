@@ -1,0 +1,2097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Parent Points Tracker</title>
+  
+  <!-- Mobile & PWA meta tags -->
+  <meta name="theme-color" content="#d97706">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Parent Points">
+
+  <!-- Google Fonts: Fredoka & Quicksand -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    body {
+      font-family: 'Quicksand', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    .font-heading {
+      font-family: 'Fredoka', cursive;
+    }
+    .pin-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 9999px;
+      border: 2px solid #cbd5e1;
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .pin-dot.filled {
+      background-color: #6366f1;
+      border-color: #6366f1;
+      transform: scale(1.15);
+      box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+    }
+    .tap-scale {
+      transition: transform 0.1s ease, filter 0.1s ease;
+    }
+    .tap-scale:active {
+      transform: scale(0.96);
+      filter: brightness(0.95);
+    }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 pb-20 selection:bg-indigo-100">
+
+  <nav class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2.5">
+        <span class="text-3xl">⭐</span>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-bold font-heading text-indigo-950 tracking-tight leading-none">Parent Points</h1>
+          <p class="text-[11px] font-semibold text-slate-400 mt-0.5">Atlas • Renn • Elio</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1 sm:gap-2">
+        <button onclick="switchTab('board')" id="nav-board" class="nav-btn px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all bg-indigo-600 text-white shadow-sm tap-scale">
+          🌟 Points
+        </button>
+        <button onclick="switchTab('chores')" id="nav-chores" class="nav-btn px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all text-slate-600 hover:bg-slate-100 tap-scale">
+          ⚡ Earn Points
+        </button>
+        <button onclick="switchTab('shop')" id="nav-shop" class="nav-btn px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all text-slate-600 hover:bg-slate-100 tap-scale">
+          🎁 Rewards
+        </button>
+        <button onclick="requireParentPin(openParentAdminDirect)" id="nav-admin" class="nav-btn px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all text-slate-600 hover:bg-slate-100 tap-scale">
+          ⚙️ Admin
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 transform -translate-y-12 opacity-0 pointer-events-none transition-all duration-300 bg-slate-900/90 backdrop-blur-md text-white font-bold px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-sm sm:text-base border border-slate-700/50">
+    <span id="toastIcon" class="text-xl">✨</span>
+    <span id="toastMsg">Notification message</span>
+  </div>
+
+  <main class="max-w-6xl mx-auto px-4 py-6">
+
+    <section id="view-board" class="space-y-6">
+      <div id="bannerCard" class="bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 text-amber-950 rounded-3xl p-6 sm:p-8 shadow-lg border border-amber-300/80 relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="absolute -right-10 -bottom-10 w-44 h-44 bg-white/20 rounded-full blur-2xl pointer-events-none"></div>
+        <div class="relative z-10 max-w-2xl">
+          <span class="inline-block text-xs font-bold uppercase tracking-wider bg-amber-950/15 text-amber-950 px-3 py-1 rounded-full mb-2">Family Goal Board</span>
+          <h2 id="bannerHeadingText" class="text-2xl sm:text-4xl font-extrabold font-heading tracking-tight text-amber-950">Level Up & Celebrate! 🚀</h2>
+          <p id="bannerSubtextText" class="text-amber-900/90 text-sm sm:text-base font-semibold mt-1 leading-relaxed">Earn points by completing chores and being awesome brothers!</p>
+        </div>
+        <button onclick="requestCelebrateAllPrompt()" class="relative z-10 bg-white hover:bg-amber-50 active:bg-amber-100 text-amber-950 font-bold px-5 py-3 rounded-2xl shadow-md border border-amber-200/80 flex items-center gap-2 tap-scale self-start sm:self-auto shrink-0 font-heading text-sm sm:text-base">
+          <span>🎉</span> Celebrate All (+2)
+        </button>
+      </div>
+
+      <div id="kidsGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+        <!-- Dynamically populated via JS -->
+      </div>
+    </section>
+
+    <section id="view-chores" class="hidden space-y-6">
+      <!-- Featured Chore Banner -->
+      <div id="featuredChoreBox" class="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white rounded-3xl p-6 shadow-md hidden flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div id="featuredChoreEmoji" class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-4xl shadow-inner shrink-0">⭐</div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="bg-white/25 text-white font-extrabold text-[11px] uppercase tracking-wider px-2.5 py-0.5 rounded-full">Today's Star Chore</span>
+              <span id="featuredChoreDate" class="text-xs font-semibold text-amber-100"></span>
+            </div>
+            <h3 id="featuredChoreTitle" class="text-xl sm:text-2xl font-bold font-heading mt-0.5">Featured Chore Title</h3>
+            <p id="featuredChorePts" class="text-sm text-amber-100 font-semibold"></p>
+          </div>
+        </div>
+        <div id="featuredChoreActions" class="flex flex-wrap gap-2 justify-end w-full sm:w-auto">
+          <!-- Quick action buttons per boy -->
+        </div>
+      </div>
+
+      <!-- Daily Chore Summary Reel -->
+      <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden">
+        <button onclick="toggleSummaryAccordion()" class="w-full px-6 py-4.5 bg-gradient-to-r from-slate-50 via-indigo-50/30 to-white flex items-center justify-between text-left hover:bg-slate-100/60 transition-colors">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-xl shadow-inner shrink-0">📋</div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-lg sm:text-xl font-bold font-heading text-slate-800">Today's Completed Chores</h3>
+                <span id="summaryBadgeCount" class="bg-indigo-600 text-white text-xs font-bold font-mono px-2.5 py-0.5 rounded-full">0 Completed</span>
+              </div>
+              <p class="text-xs text-slate-500 font-medium">Quick summary of all chores claimed today. Tap ↩️ to undo any entry.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <span id="summaryToggleLabel" class="text-xs font-bold text-indigo-600 hidden sm:inline">Hide</span>
+            <span id="summaryToggleIcon" class="text-indigo-600 font-bold text-sm">▲</span>
+          </div>
+        </button>
+
+        <div id="summaryAccordionDrawer" class="p-5 border-t border-slate-100 bg-white">
+          <div id="summaryListGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <!-- Dynamic completed chore items with inline Undo buttons -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Earner Kid Selector Bar -->
+      <div class="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h3 class="text-lg font-bold font-heading text-slate-800">Who is claiming chores right now?</h3>
+          <p class="text-xs text-slate-500 font-medium">Select your card below to mark tasks complete or undo mistakes.</p>
+        </div>
+        <div id="choreEarnerSelector" class="flex gap-2">
+          <!-- Injected boys selector buttons -->
+        </div>
+      </div>
+
+      <!-- Chores Catalog Grid -->
+      <div id="choresCatalogGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Dynamically injected chore cards with Complete / Undo buttons -->
+      </div>
+    </section>
+
+    <section id="view-shop" class="hidden space-y-6">
+      <div class="bg-white rounded-3xl border border-amber-200/90 bg-amber-50/30 p-6 shadow-xs">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2.5">
+            <span class="text-2xl">⏳</span>
+            <div>
+              <h3 class="text-lg sm:text-xl font-bold font-heading text-slate-800">Pending Rewards Queue</h3>
+              <p class="text-xs text-slate-500 font-medium">Rewards purchased by the boys that have not been given yet.</p>
+            </div>
+          </div>
+          <span id="pendingCountBadge" class="bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold px-3 py-1 rounded-full">0 Pending</span>
+        </div>
+        <div id="pendingRewardsList" class="space-y-2.5">
+          <!-- Dynamic pending reward cards -->
+        </div>
+      </div>
+
+      <div>
+        <h3 class="text-base font-bold font-heading text-slate-700 mb-3 px-1">Choose Who Is Shopping:</h3>
+        <div id="shopperCardsGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <!-- Dynamic shopper cards -->
+        </div>
+      </div>
+
+      <div class="space-y-8">
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 font-bold text-xs font-mono">1 - 10 PTS</span>
+            <h4 class="text-base sm:text-lg font-bold font-heading text-slate-800">Quick Wins</h4>
+          </div>
+          <div id="rewardsTier1" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </div>
+
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="px-2.5 py-1 rounded-lg bg-blue-100 text-blue-800 font-bold text-xs font-mono">11 - 20 PTS</span>
+            <h4 class="text-base sm:text-lg font-bold font-heading text-slate-800">Level Up Treats</h4>
+          </div>
+          <div id="rewardsTier2" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </div>
+
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="px-2.5 py-1 rounded-lg bg-purple-100 text-purple-800 font-bold text-xs font-mono">21+ PTS</span>
+            <h4 class="text-base sm:text-lg font-bold font-heading text-slate-800">Grand Quests & Big Rewards</h4>
+          </div>
+          <div id="rewardsTier3" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-admin" class="hidden space-y-6">
+      <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-xs">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-slate-100 gap-4">
+          <div>
+            <h2 class="text-2xl font-bold font-heading text-slate-800">Parent Administration Control</h2>
+            <p class="text-xs sm:text-sm text-slate-500 font-medium">Manage family banner, manual points, chores, rewards, and sync.</p>
+          </div>
+          <button onclick="lockParentAdmin()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl tap-scale self-start sm:self-auto">
+            🔒 Lock Admin Session
+          </button>
+        </div>
+
+        <!-- Manual Points Adjustment Section -->
+        <div class="mt-6 p-6 rounded-3xl bg-gradient-to-r from-indigo-50/70 via-purple-50/50 to-pink-50/40 border border-indigo-200/80">
+          <div class="flex items-center gap-2.5 mb-2">
+            <span class="text-2xl">⚖️</span>
+            <div>
+              <h3 class="text-base font-bold font-heading text-indigo-950">Manual Points Adjustment</h3>
+              <p class="text-xs text-slate-500 font-medium">Quickly add or deduct points for any boy with an optional reason note.</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Select Child</label>
+              <select id="manualAdjustKidSelect" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-bold bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                <!-- Dynamically populated -->
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Point Amount</label>
+              <input type="number" id="manualAdjustAmount" min="1" max="100" value="1" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-mono text-sm font-bold bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Reason / Note (Optional)</label>
+              <input type="text" id="manualAdjustNote" placeholder="e.g. Helped clean garage" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-medium bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-indigo-100">
+            <div class="flex items-center gap-1.5">
+              <span class="text-[11px] font-bold text-slate-400 mr-1">Presets:</span>
+              <button type="button" onclick="setManualAdjustPreset(1)" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 font-bold text-xs tap-scale">1</button>
+              <button type="button" onclick="setManualAdjustPreset(2)" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 font-bold text-xs tap-scale">2</button>
+              <button type="button" onclick="setManualAdjustPreset(5)" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 font-bold text-xs tap-scale">5</button>
+              <button type="button" onclick="setManualAdjustPreset(10)" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 font-bold text-xs tap-scale">10</button>
+            </div>
+            <div class="flex gap-2">
+              <button type="button" onclick="executeManualAdjust('add')" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold font-heading text-xs tap-scale shadow-xs flex items-center gap-1.5">
+                <span>➕</span> Add Points
+              </button>
+              <button type="button" onclick="executeManualAdjust('deduct')" class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold font-heading text-xs tap-scale shadow-xs flex items-center gap-1.5">
+                <span>➖</span> Deduct Points
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Banner & PIN Management -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-8">
+          <div class="space-y-4">
+            <h3 class="text-base font-bold font-heading text-indigo-950 flex items-center gap-2">
+              <span>📢</span> Welcome Banner Messages
+            </h3>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Banner Heading</label>
+              <input type="text" id="adminBannerHead" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Banner Subtext</label>
+              <input type="text" id="adminBannerSub" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+            </div>
+            <button onclick="saveBannerSettings()" class="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl tap-scale hover:bg-indigo-700">Save Banner</button>
+          </div>
+
+          <div class="space-y-4">
+            <h3 class="text-base font-bold font-heading text-indigo-950 flex items-center gap-2">
+              <span>🔐</span> Parent PIN Code
+            </h3>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Update 4-Digit Parent PIN</label>
+              <input type="password" maxlength="4" id="adminPinInput" placeholder="1234" class="w-40 px-3.5 py-2 rounded-xl border border-slate-300 text-center font-mono text-lg font-bold tracking-widest focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+            </div>
+            <button onclick="saveNewPin()" class="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl tap-scale hover:bg-indigo-700">Update PIN</button>
+          </div>
+        </div>
+
+        <!-- Boys Profiles & DOBs -->
+        <div class="mt-8 pt-8 border-t border-slate-100">
+          <h3 class="text-base font-bold font-heading text-indigo-950 mb-4 flex items-center gap-2">
+            <span>👦</span> Boys Profiles & Birthdays (Dynamic Age Calculation)
+          </h3>
+          <div id="adminKidsList" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Dynamically populated boy edit cards -->
+          </div>
+        </div>
+
+        <!-- Chores Management -->
+        <div class="mt-8 pt-8 border-t border-slate-100">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base font-bold font-heading text-indigo-950 flex items-center gap-2">
+              <span>🧹</span> Household Chores & Habits
+            </h3>
+            <button onclick="openAddChoreModal()" class="px-3.5 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-xl tap-scale hover:bg-indigo-700">
+              + New Chore
+            </button>
+          </div>
+          <div id="adminChoresList" class="space-y-2">
+            <!-- Chores listing -->
+          </div>
+        </div>
+
+        <!-- Rewards Management -->
+        <div class="mt-8 pt-8 border-t border-slate-100">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base font-bold font-heading text-indigo-950 flex items-center gap-2">
+              <span>🎁</span> Reward Store Items
+            </h3>
+            <button onclick="openAddRewardModal()" class="px-3.5 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-xl tap-scale hover:bg-indigo-700">
+              + New Reward
+            </button>
+          </div>
+          <div id="adminRewardsList" class="space-y-2">
+            <!-- Rewards listing -->
+          </div>
+        </div>
+
+        <!-- Cloud Sync Endpoint -->
+        <div class="mt-8 pt-8 border-t border-slate-100">
+          <h3 class="text-base font-bold font-heading text-indigo-950 mb-2 flex items-center gap-2">
+            <span>☁️</span> Google Drive / Google Sheets Cloud Sync
+          </h3>
+          <p class="text-xs text-slate-500 font-medium mb-3">Paste your Google Apps Script Web App URL ending in <code>/exec</code> to sync points automatically between your phone and tablet.</p>
+          <div class="flex gap-2 max-w-xl">
+            <input type="url" id="adminSyncUrlInput" placeholder="https://script.google.com/macros/s/.../exec" class="flex-1 px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+            <button onclick="saveSyncEndpoint()" class="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl tap-scale hover:bg-emerald-700 shrink-0">Connect & Sync</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modals -->
+  <div id="pinModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 text-center">
+      <div class="flex justify-between items-center mb-2">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Security Check</span>
+        <button onclick="closePinModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-sm tap-scale flex items-center justify-center">✕</button>
+      </div>
+      <h3 class="text-xl font-bold font-heading text-slate-800">Enter Parent PIN</h3>
+      <p class="text-xs text-slate-500 mb-6">Parent verification required for this action.</p>
+
+      <div class="flex justify-center gap-4 mb-6">
+        <div class="pin-dot" id="dot-0"></div>
+        <div class="pin-dot" id="dot-1"></div>
+        <div class="pin-dot" id="dot-2"></div>
+        <div class="pin-dot" id="dot-3"></div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-3 max-w-[260px] mx-auto mb-2">
+        <button onclick="pressPinKey('1')" class="h-14 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-2xl font-bold font-mono tap-scale">1</button>
+        <button onclick="pressPinKey('2')" class="h-14 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-2xl font-bold font-mono tap-scale">2</button>
+        <button onclick="pressPinKey('3')" class="h-14 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-2xl font-bold font-mono tap-scale">3</button>
+        <button onclick="pressPinKey('4')" class="h-14 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-2xl font-bold font-mono tap-scale">4</button>
+        <button onclick="pressPinKey('5')" class="h-14 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-2xl font-bold font-mono tap-scale">5</button>
+        <button onclick="pressPinKey('6')" class="h-14 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-2xl font-bold font-mono tap-scale">6</button>
+        <button onclick="pressPinKey('7')" class="h-14 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-2xl font-bold font-mono tap-scale">7</button>
+        <button onclick="pressPinKey('8')" class="h-14 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-2xl font-bold font-mono tap-scale">8</button>
+        <button onclick="pressPinKey('9')" class="h-14 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-2xl font-bold font-mono tap-scale">9</button>
+        <button onclick="clearPinKey()" class="h-14 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-sm font-bold tap-scale">C</button>
+        <button onclick="pressPinKey('0')" class="h-14 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-2xl font-bold font-mono tap-scale">0</button>
+        <button onclick="backspacePinKey()" class="h-14 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xl font-bold tap-scale">⌫</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pointActionModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 text-center relative">
+      <button onclick="closePointActionModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-sm tap-scale flex items-center justify-center">✕</button>
+      <div id="pointModalIcon" class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 text-3xl flex items-center justify-center mx-auto mb-3 shadow-inner">⭐</div>
+      <h3 id="pointModalTitle" class="text-xl font-bold font-heading text-slate-800">Add Points</h3>
+      <p id="pointModalSubtitle" class="text-xs text-slate-500 mb-4">Adding points</p>
+      
+      <div class="text-left mb-5">
+        <label class="block text-xs font-bold text-slate-600 mb-1">Add Note (Optional)</label>
+        <input type="text" id="pointModalNote" placeholder="e.g. Brushed teeth with smile" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+      </div>
+
+      <div class="flex gap-2">
+        <button onclick="closePointActionModal()" class="flex-1 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs tap-scale">Cancel</button>
+        <button onclick="executePointActionModal()" id="pointModalConfirmBtn" class="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md tap-scale">Confirm Points</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="celebrateAllModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 text-center relative">
+      <button onclick="closeCelebrateAllModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-sm tap-scale flex items-center justify-center">✕</button>
+      <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-500 text-4xl flex items-center justify-center mx-auto mb-3 shadow-inner">🎉</div>
+      <h3 class="text-xl font-bold font-heading text-slate-800">Celebrate All Boys!</h3>
+      <p class="text-xs text-slate-500 mb-4">Awards +2 points each to Atlas, Renn, and Elio!</p>
+      
+      <div class="text-left mb-5">
+        <label class="block text-xs font-bold text-slate-600 mb-1">Reason / Note (Optional)</label>
+        <input type="text" id="celebrateAllNote" placeholder="e.g. Amazing team cleanup!" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-medium focus:ring-2 focus:ring-amber-500 focus:outline-hidden">
+      </div>
+
+      <div class="flex gap-2">
+        <button onclick="closeCelebrateAllModal()" class="flex-1 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs tap-scale">Cancel</button>
+        <button onclick="executeCelebrateAllAction()" class="flex-1 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-md tap-scale">Celebrate (+2 Each)</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="kidProfileModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 relative">
+      <button onclick="closeKidProfileModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-sm tap-scale flex items-center justify-center">✕</button>
+      <h3 class="text-xl font-bold font-heading text-slate-800 mb-1">Customize Profile</h3>
+      <p id="kidProfileSub" class="text-xs text-slate-500 mb-4">Personalize your avatar, color, and target goal.</p>
+
+      <div class="mb-4">
+        <label class="block text-xs font-bold text-slate-600 mb-1.5">Pick Avatar Emoji (18 Choices)</label>
+        <div id="emojiGrid" class="grid grid-cols-6 gap-2 text-2xl p-2 bg-slate-50 rounded-2xl border border-slate-200/80">
+          <!-- Emojis injected via JS -->
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-xs font-bold text-slate-600 mb-1.5">Choose Progress Bar & Card Color</label>
+        <div id="colorPickerGrid" class="grid grid-cols-6 gap-2">
+          <!-- Colors injected via JS -->
+        </div>
+      </div>
+
+      <div class="mb-5">
+        <label class="block text-xs font-bold text-slate-600 mb-1">Point Target Goal</label>
+        <input type="number" id="kidProfileGoalInput" min="5" max="500" step="5" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold font-mono text-base focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+      </div>
+
+      <button onclick="saveKidProfileModal()" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md tap-scale">Save My Profile</button>
+    </div>
+  </div>
+
+  <div id="checkoutModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 text-center relative">
+      <button onclick="closeCheckoutModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-sm tap-scale flex items-center justify-center">✕</button>
+      <div id="checkoutEmoji" class="w-16 h-16 rounded-2xl bg-amber-50 text-3xl flex items-center justify-center mx-auto mb-3 shadow-inner">🎁</div>
+      <h3 id="checkoutTitle" class="text-xl font-bold font-heading text-slate-800">Reward Title</h3>
+      <p id="checkoutCostText" class="text-sm font-bold text-indigo-600 mb-2">Cost: 10 Points</p>
+      <p id="checkoutDesc" class="text-xs text-slate-500 mb-5">Are you sure you want to trade your points for this reward?</p>
+
+      <div class="flex gap-2">
+        <button onclick="closeCheckoutModal()" class="flex-1 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs tap-scale">Cancel</button>
+        <button onclick="confirmCheckoutReward()" id="checkoutConfirmBtn" class="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md tap-scale">Yes, Redeem! 🚀</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="choreEditModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 relative">
+      <button onclick="closeChoreEditModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-sm tap-scale flex items-center justify-center">✕</button>
+      <h3 id="choreEditModalTitle" class="text-xl font-bold font-heading text-slate-800 mb-4">New Chore / Habit</h3>
+
+      <div class="space-y-3 mb-5">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Chore Title</label>
+          <input type="text" id="choreInputTitle" placeholder="e.g. Put clothes in hamper" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Emoji Icon</label>
+            <input type="text" id="choreInputEmoji" placeholder="🧺" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xl text-center focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Points (Blank = Habit/0pts)</label>
+            <input type="number" id="choreInputPoints" placeholder="2" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1.5">Who does this chore apply to?</label>
+          <div class="flex gap-4 p-3 bg-slate-50 rounded-2xl border border-slate-200/80">
+            <label class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+              <input type="checkbox" id="choreCheckAtlas" class="rounded-sm text-indigo-600 focus:ring-indigo-500"> Atlas
+            </label>
+            <label class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+              <input type="checkbox" id="choreCheckRenn" class="rounded-sm text-indigo-600 focus:ring-indigo-500"> Renn
+            </label>
+            <label class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+              <input type="checkbox" id="choreCheckElio" class="rounded-sm text-indigo-600 focus:ring-indigo-500"> Elio
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <button onclick="saveChoreEditModal()" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md tap-scale">Save Chore</button>
+    </div>
+  </div>
+
+  <div id="rewardEditModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 relative">
+      <button onclick="closeRewardEditModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-sm tap-scale flex items-center justify-center">✕</button>
+      <h3 class="text-xl font-bold font-heading text-slate-800 mb-4">New Reward Item</h3>
+
+      <div class="space-y-3 mb-5">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Reward Title</label>
+          <input type="text" id="rewardInputTitle" placeholder="e.g. 30 Mins Video Games" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Emoji Icon</label>
+            <input type="text" id="rewardInputEmoji" placeholder="🎮" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xl text-center focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Cost (Points)</label>
+            <input type="number" id="rewardInputCost" placeholder="15" min="1" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+          </div>
+        </div>
+      </div>
+
+      <button onclick="saveRewardEditModal()" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md tap-scale">Save Reward</button>
+    </div>
+  </div>
+
+  <script>
+    // --- 1. EMBEDDED PWA ICON GENERATOR & SERVICE WORKER SETUP ---
+    function setupEmbeddedPWA() {
+      try {
+        function createIconBlob(size) {
+          const canvas = document.createElement('canvas');
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext('2d');
+          
+          // Background circle
+          ctx.fillStyle = '#f59e0b';
+          ctx.beginPath();
+          ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Border ring
+          ctx.lineWidth = size * 0.04;
+          ctx.strokeStyle = '#d97706';
+          ctx.stroke();
+
+          // Star Emoji center
+          ctx.font = `${Math.floor(size * 0.58)}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('⭐', size / 2, size / 2 + size * 0.03);
+
+          return canvas.toDataURL('image/png');
+        }
+
+        const icon192 = createIconBlob(192);
+        const icon512 = createIconBlob(512);
+
+        // Inject dynamic Apple touch icon
+        const appleIcon = document.createElement('link');
+        appleIcon.rel = 'apple-touch-icon';
+        appleIcon.href = icon192;
+        document.head.appendChild(appleIcon);
+
+        // Inject dynamic Manifest blob
+        const manifestObj = {
+          name: "Parent Points Tracker",
+          short_name: "Parent Points",
+          description: "Family points and chore reward tracker for Atlas, Renn, and Elio",
+          start_url: window.location.href,
+          display: "standalone",
+          orientation: "any",
+          background_color: "#f8fafc",
+          theme_color: "#d97706",
+          icons: [
+            { src: icon192, sizes: "192x192", type: "image/png", purpose: "any maskable" },
+            { src: icon512, sizes: "512x512", type: "image/png", purpose: "any maskable" }
+          ]
+        };
+
+        const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
+        const manifestUrl = URL.createObjectURL(manifestBlob);
+        const manifestLink = document.createElement('link');
+        manifestLink.rel = 'manifest';
+        manifestLink.href = manifestUrl;
+        document.head.appendChild(manifestLink);
+
+        // Self-register lightweight inline Service Worker blob
+        if ('serviceWorker' in navigator) {
+          const swCode = `
+            const CACHE_NAME = 'pp-cache-v1';
+            self.addEventListener('install', e => self.skipWaiting());
+            self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+            self.addEventListener('fetch', e => {
+              e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+            });
+          `;
+          const swBlob = new Blob([swCode], { type: 'application/javascript' });
+          const swUrl = URL.createObjectURL(swBlob);
+          navigator.serviceWorker.register(swUrl).catch(() => {});
+        }
+      } catch (err) {}
+    }
+
+    setupEmbeddedPWA();
+
+    // --- 2. THEMES & DEFAULTS ---
+    const THEME_COLORS = {
+      blue: {
+        id: 'blue',
+        name: 'Sky Blue',
+        accentBg: 'bg-sky-500',
+        cardBg: 'bg-sky-50/50',
+        border: 'border-sky-300',
+        text: 'text-sky-700',
+        btnBg: 'bg-sky-600 hover:bg-sky-700 text-white',
+        barGradient: 'from-sky-400 to-blue-600'
+      },
+      green: {
+        id: 'green',
+        name: 'Emerald Green',
+        accentBg: 'bg-emerald-500',
+        cardBg: 'bg-emerald-50/50',
+        border: 'border-emerald-300',
+        text: 'text-emerald-700',
+        btnBg: 'bg-emerald-600 hover:bg-emerald-700 text-white',
+        barGradient: 'from-emerald-400 to-teal-600'
+      },
+      orange: {
+        id: 'orange',
+        name: 'Warm Orange',
+        accentBg: 'bg-orange-500',
+        cardBg: 'bg-orange-50/50',
+        border: 'border-orange-300',
+        text: 'text-orange-700',
+        btnBg: 'bg-orange-600 hover:bg-orange-700 text-white',
+        barGradient: 'from-amber-400 to-orange-600'
+      },
+      purple: {
+        id: 'purple',
+        name: 'Royal Purple',
+        accentBg: 'bg-purple-500',
+        cardBg: 'bg-purple-50/50',
+        border: 'border-purple-300',
+        text: 'text-purple-700',
+        btnBg: 'bg-purple-600 hover:bg-purple-700 text-white',
+        barGradient: 'from-violet-400 to-purple-600'
+      },
+      red: {
+        id: 'red',
+        name: 'Ruby Red',
+        accentBg: 'bg-rose-500',
+        cardBg: 'bg-rose-50/50',
+        border: 'border-rose-300',
+        text: 'text-rose-700',
+        btnBg: 'bg-rose-600 hover:bg-rose-700 text-white',
+        barGradient: 'from-rose-400 to-red-600'
+      },
+      yellow: {
+        id: 'yellow',
+        name: 'Sun Yellow',
+        accentBg: 'bg-amber-400',
+        cardBg: 'bg-amber-50/50',
+        border: 'border-amber-300',
+        text: 'text-amber-800',
+        btnBg: 'bg-amber-500 hover:bg-amber-600 text-amber-950',
+        barGradient: 'from-yellow-300 to-amber-500'
+      }
+    };
+
+    const EMOJI_OPTIONS = [
+      '🚀', '🦖', '🚗', '🦁', '⚽', '🎮', 
+      '🥋', '🛹', '🐲', '⚡', '🤖', '🎸',
+      '🌟', '🍦', '🍕', '🎯', '👑', '🦸'
+    ];
+
+    const DEFAULT_DATA = {
+      parentPin: '1234',
+      banner: {
+        heading: 'Level Up & Celebrate! 🚀',
+        subtext: 'Earn points by completing chores and being awesome brothers!'
+      },
+      kids: [
+        {
+          id: 'kid-atlas',
+          name: 'Atlas',
+          dob: '2019-03-15',
+          points: 38,
+          targetGoal: 50,
+          color: 'blue',
+          avatar: '🚀',
+          history: [
+            { id: 'h1', text: 'Earned 5 points', note: 'Vacuumed the family room', pts: '+5', date: 'Yesterday' },
+            { id: 'h2', text: 'Earned 2 points', note: 'Piano practice 20 mins', pts: '+2', date: '2 days ago' }
+          ]
+        },
+        {
+          id: 'kid-renn',
+          name: 'Renn',
+          dob: '2022-06-10',
+          points: 22,
+          targetGoal: 30,
+          color: 'orange',
+          avatar: '🦖',
+          history: [
+            { id: 'h3', text: 'Earned 2 points', note: 'Cleaned up train tracks', pts: '+2', date: 'Yesterday' },
+            { id: 'h4', text: 'Earned 1 point', note: 'Brushed teeth nicely', pts: '+1', date: 'Yesterday' }
+          ]
+        },
+        {
+          id: 'kid-elio',
+          name: 'Elio',
+          dob: '2024-07-20',
+          points: 14,
+          targetGoal: 20,
+          color: 'green',
+          avatar: '🚗',
+          history: [
+            { id: 'h5', text: 'Earned 1 point', note: 'Put shoes in closet', pts: '+1', date: 'Today' },
+            { id: 'h6', text: 'Earned 2 points', note: 'Ate all veggies', pts: '+2', date: 'Yesterday' }
+          ]
+        }
+      ],
+      featuredChoreId: 'c-piano',
+      chores: [
+        { id: 'c-piano', title: 'Piano Practice (20 mins)', emoji: '🎹', points: 3, applicableKids: ['kid-atlas', 'kid-renn'] },
+        { id: 'c-vacuum', title: 'Vacuum Family Room', emoji: '🧹', points: 4, applicableKids: ['kid-atlas'] },
+        { id: 'c-dishes', title: 'Empty Silverware / Dishes', emoji: '🍽️', points: 2, applicableKids: ['kid-atlas', 'kid-renn'] },
+        { id: 'c-nami', title: 'Feed Nami the Dog 🐕', emoji: '🦴', points: 1, applicableKids: ['kid-atlas', 'kid-renn', 'kid-elio'] },
+        { id: 'c-teeth', title: 'Brush Teeth Morning & Night', emoji: '🪥', points: '', applicableKids: ['kid-atlas', 'kid-renn', 'kid-elio'] },
+        { id: 'c-toys', title: 'Put Away All Toys', emoji: '🧸', points: 2, applicableKids: ['kid-atlas', 'kid-renn', 'kid-elio'] },
+        { id: 'c-hamper', title: 'Put Clothes in Hamper', emoji: '🧺', points: '', applicableKids: ['kid-atlas', 'kid-renn', 'kid-elio'] }
+      ],
+      rewards: [
+        { id: 'r-treat', title: 'Pick Dinner Dessert / Treat', emoji: '🍦', cost: 5 },
+        { id: 'r-story', title: 'Extra Bedtime Story + Snuggle', emoji: '📖', cost: 8 },
+        { id: 'r-dollar', title: 'Dollar Store Surprise Prize', emoji: '🎁', cost: 10 },
+        { id: 'r-game30', title: '30 Mins Extra Screen / Game', emoji: '🎮', cost: 15 },
+        { id: 'r-park', title: 'Pick the Weekend Park Outing', emoji: '🏞️', cost: 20 },
+        { id: 'r-movie', title: 'Family Movie Night Choice & Popcorn', emoji: '🍿', cost: 25 },
+        { id: 'r-lego', title: 'New Lego Set / Big Toy Wish', emoji: '🧱', cost: 45 }
+      ],
+      pendingRewards: [
+        { id: 'pr-1', kidId: 'kid-atlas', kidName: 'Atlas', rewardTitle: '30 Mins Extra Screen / Game', emoji: '🎮', cost: 15, date: 'Today' }
+      ],
+      choreCompletions: {},
+      choreLog: {}
+    };
+
+    let appData = {};
+    let activeShopperId = 'kid-atlas';
+    let activeChoreKidId = 'kid-atlas';
+    let parentSessionExpiry = 0;
+    let pinInputString = "";
+    let pendingPinCallback = null;
+    let pointActionPending = null;
+    let editingKidProfileId = null;
+    let editingChoreId = null;
+    let isSummaryExpanded = true;
+    let audioContext = null;
+
+    function getTodayKey() {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    }
+
+    function loadData() {
+      const saved = localStorage.getItem('parent_points_data_v3');
+      if (saved) {
+        try {
+          appData = JSON.parse(saved);
+        } catch(e) {
+          appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+        }
+      } else {
+        appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+      }
+      if (!appData.kids || appData.kids.length === 0) appData.kids = DEFAULT_DATA.kids;
+      if (!appData.banner) appData.banner = DEFAULT_DATA.banner;
+      if (!appData.parentPin) appData.parentPin = '1234';
+      if (!appData.choreCompletions) appData.choreCompletions = {};
+      if (!appData.choreLog) appData.choreLog = {};
+    }
+
+    function saveData() {
+      localStorage.setItem('parent_points_data_v3', JSON.stringify(appData));
+      syncWithGoogleSheet();
+    }
+
+    function calculateAge(dobString) {
+      if (!dobString) return '';
+      const birth = new Date(dobString);
+      const now = new Date();
+      if (isNaN(birth.getTime())) return '';
+      
+      let years = now.getFullYear() - birth.getFullYear();
+      let months = now.getMonth() - birth.getMonth();
+      if (now.getDate() < birth.getDate()) {
+        months--;
+      }
+      if (months < 0) {
+        years--;
+        months += 12;
+      }
+      const decimal = Math.round((months / 12) * 10) / 10;
+      const totalAge = (years + decimal).toFixed(1);
+      return `${totalAge} yrs`;
+    }
+
+    function playChime(type) {
+      try {
+        if (!audioContext) {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioContext.state === 'suspended') {
+          audioContext.resume();
+        }
+        const now = audioContext.currentTime;
+
+        if (type === 'rocket') {
+          const osc = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(140, now);
+          osc.frequency.exponentialRampToValueAtTime(880, now + 0.35);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+          osc.connect(gain);
+          gain.connect(audioContext.destination);
+          osc.start(now);
+          osc.stop(now + 0.4);
+        } else if (type === 'fanfare') {
+          [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            osc.frequency.setValueAtTime(freq, now + (i * 0.08));
+            gain.gain.setValueAtTime(0.2, now + (i * 0.08));
+            gain.gain.exponentialRampToValueAtTime(0.001, now + (i * 0.08) + 0.3);
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            osc.start(now + (i * 0.08));
+            osc.stop(now + (i * 0.08) + 0.3);
+          });
+        } else {
+          const osc = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+          osc.frequency.setValueAtTime(587.33, now);
+          osc.frequency.exponentialRampToValueAtTime(880, now + 0.1);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+          osc.connect(gain);
+          gain.connect(audioContext.destination);
+          osc.start(now);
+          osc.stop(now + 0.22);
+        }
+      } catch(e) {}
+    }
+
+    function showToast(msg, icon = '✨') {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      const toastIcon = document.getElementById('toastIcon');
+      if (!toast) return;
+      toastMsg.textContent = msg;
+      toastIcon.textContent = icon;
+      toast.classList.remove('opacity-0', '-translate-y-12');
+      toast.classList.add('opacity-100', 'translate-y-0');
+      setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', '-translate-y-12');
+      }, 2800);
+    }
+
+    function requireParentPin(callback) {
+      const now = Date.now();
+      if (now < parentSessionExpiry) {
+        callback();
+        return;
+      }
+      pendingPinCallback = callback;
+      pinInputString = "";
+      updatePinDots();
+      document.getElementById('pinModal').classList.remove('hidden');
+    }
+
+    function closePinModal() {
+      document.getElementById('pinModal').classList.add('hidden');
+      pendingPinCallback = null;
+      pinInputString = "";
+    }
+
+    function updatePinDots() {
+      for (let i = 0; i < 4; i++) {
+        const dot = document.getElementById(`dot-${i}`);
+        if (i < pinInputString.length) {
+          dot.classList.add('filled');
+        } else {
+          dot.classList.remove('filled');
+        }
+      }
+    }
+
+    function pressPinKey(digit) {
+      if (pinInputString.length >= 4) return;
+      pinInputString += digit;
+      updatePinDots();
+      playChime('tap');
+
+      if (pinInputString.length === 4) {
+        setTimeout(verifyPinCode, 150);
+      }
+    }
+
+    function clearPinKey() {
+      pinInputString = "";
+      updatePinDots();
+    }
+
+    function backspacePinKey() {
+      pinInputString = pinInputString.slice(0, -1);
+      updatePinDots();
+    }
+
+    function verifyPinCode() {
+      if (pinInputString === appData.parentPin) {
+        parentSessionExpiry = Date.now() + 60000;
+        const cb = pendingPinCallback;
+        closePinModal();
+        if (cb) cb();
+      } else {
+        showToast('Incorrect PIN. Try again!', '🔒');
+        pinInputString = "";
+        updatePinDots();
+      }
+    }
+
+    function switchTab(tabId) {
+      const views = ['board', 'chores', 'shop', 'admin'];
+      views.forEach(v => {
+        const sec = document.getElementById(`view-${v}`);
+        const btn = document.getElementById(`nav-${v}`);
+        if (v === tabId) {
+          sec.classList.remove('hidden');
+          btn.className = "nav-btn px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all bg-indigo-600 text-white shadow-sm tap-scale";
+        } else {
+          sec.classList.add('hidden');
+          btn.className = "nav-btn px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all text-slate-600 hover:bg-slate-100 tap-scale";
+        }
+      });
+
+      if (tabId === 'board') renderPointsBoard();
+      if (tabId === 'chores') renderChoresView();
+      if (tabId === 'shop') renderShopView();
+      if (tabId === 'admin') renderAdminView();
+    }
+
+    function openParentAdminDirect() {
+      switchTab('admin');
+    }
+
+    function lockParentAdmin() {
+      parentSessionExpiry = 0;
+      switchTab('board');
+      showToast('Admin session locked 🔒', '🔒');
+    }
+
+    function renderPointsBoard() {
+      document.getElementById('bannerHeadingText').textContent = appData.banner.heading || DEFAULT_DATA.banner.heading;
+      document.getElementById('bannerSubtextText').textContent = appData.banner.subtext || DEFAULT_DATA.banner.subtext;
+
+      const grid = document.getElementById('kidsGrid');
+      grid.innerHTML = '';
+
+      appData.kids.forEach(kid => {
+        const theme = THEME_COLORS[kid.color] || THEME_COLORS.blue;
+        const ageText = calculateAge(kid.dob);
+        const progressPct = Math.min(100, Math.round((kid.points / kid.targetGoal) * 100));
+
+        const card = document.createElement('div');
+        card.className = `rounded-3xl border ${theme.border} ${theme.cardBg} bg-white p-5 shadow-xs flex flex-col justify-between transition-all`;
+        
+        card.innerHTML = `
+          <div>
+            <div class="flex items-start justify-between gap-3 mb-4">
+              <div class="flex items-center gap-3">
+                <button onclick="openKidProfileModal('${kid.id}')" class="w-14 h-14 rounded-2xl ${theme.accentBg} text-white flex items-center justify-center text-3xl shadow-inner tap-scale shrink-0" title="Tap to customize avatar and goal">
+                  ${kid.avatar}
+                </button>
+                <div>
+                  <h3 class="text-xl font-bold font-heading text-slate-800 leading-tight">${kid.name}</h3>
+                  <div class="flex items-center gap-2 mt-0.5">
+                    <span class="text-xs font-bold text-slate-400">${ageText ? `Age ${ageText}` : ''}</span>
+                    <span class="text-slate-300">•</span>
+                    <span class="text-xs font-bold ${theme.text}">Goal: ${kid.targetGoal} pts</span>
+                  </div>
+                </div>
+              </div>
+              <div class="text-right shrink-0">
+                <span class="inline-block px-3 py-1 rounded-xl font-bold font-heading text-lg ${theme.accentBg} text-white shadow-xs">
+                  ${kid.points} <span class="text-xs font-normal">pts</span>
+                </span>
+              </div>
+            </div>
+
+            <div class="mb-5">
+              <div class="flex justify-between text-xs font-bold text-slate-500 mb-1.5">
+                <span>Progress</span>
+                <span>${progressPct}%</span>
+              </div>
+              <div class="w-full h-3.5 bg-slate-200/80 rounded-full overflow-hidden p-0.5">
+                <div class="h-full rounded-full bg-gradient-to-r ${theme.barGradient} transition-all duration-500" style="width: ${progressPct}%"></div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 mb-4">
+              <button onclick="requestPointModal('${kid.id}', 1)" class="py-2.5 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 text-slate-700 font-bold font-heading text-sm shadow-2xs tap-scale flex items-center justify-center gap-1">
+                <span>⭐</span> +1
+              </button>
+              <button onclick="requestPointModal('${kid.id}', 2)" class="py-2.5 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 text-slate-700 font-bold font-heading text-sm shadow-2xs tap-scale flex items-center justify-center gap-1">
+                <span>🌟</span> +2
+              </button>
+              <button onclick="requestPointModal('${kid.id}', 5)" class="py-2.5 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 text-slate-700 font-bold font-heading text-sm shadow-2xs tap-scale flex items-center justify-center gap-1">
+                <span>🚀</span> +5
+              </button>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-200/60 flex flex-col gap-2">
+            <button onclick="toggleKidActivityDrawer('${kid.id}')" class="text-xs font-bold text-slate-500 hover:text-slate-700 flex items-center justify-between py-1">
+              <span>Recent Activity (Last 5)</span>
+              <span id="act-arrow-${kid.id}" class="text-slate-400 font-mono">▼</span>
+            </button>
+            <div id="act-drawer-${kid.id}" class="hidden space-y-1.5 pt-1">
+              ${(kid.history || []).slice(0, 5).map(item => `
+                <div class="p-2 rounded-xl bg-white/80 border border-slate-100 flex items-center justify-between text-xs">
+                  <div>
+                    <span class="font-bold text-slate-700">${item.text}</span>
+                    ${item.note ? `<p class="text-[11px] text-slate-400 italic">${item.note}</p>` : ''}
+                  </div>
+                  <span class="font-bold font-mono ${item.pts.startsWith('+') ? 'text-emerald-600' : 'text-rose-500'}">${item.pts}</span>
+                </div>
+              `).join('') || '<p class="text-[11px] text-slate-400 italic text-center py-2">No recent activity yet.</p>'}
+            </div>
+
+            <button onclick="openShopForKid('${kid.id}')" class="w-full mt-2 py-2 rounded-xl ${theme.btnBg} font-bold text-xs shadow-xs tap-scale flex items-center justify-center gap-1.5">
+              <span>🎁</span> Open Reward Shop
+            </button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function toggleKidActivityDrawer(kidId) {
+      const drawer = document.getElementById(`act-drawer-${kidId}`);
+      const arrow = document.getElementById(`act-arrow-${kidId}`);
+      if (!drawer) return;
+      if (drawer.classList.contains('hidden')) {
+        drawer.classList.remove('hidden');
+        if (arrow) arrow.textContent = '▲';
+      } else {
+        drawer.classList.add('hidden');
+        if (arrow) arrow.textContent = '▼';
+      }
+    }
+
+    function openShopForKid(kidId) {
+      activeShopperId = kidId;
+      switchTab('shop');
+    }
+
+    function requestPointModal(kidId, points) {
+      requireParentPin(() => {
+        const kid = appData.kids.find(k => k.id === kidId);
+        if (!kid) return;
+
+        pointActionPending = { kidId, points };
+        document.getElementById('pointModalTitle').textContent = `Add +${points} Point${points > 1 ? 's' : ''}`;
+        document.getElementById('pointModalSubtitle').textContent = `Rewarding ${kid.name}`;
+        document.getElementById('pointModalNote').value = '';
+        document.getElementById('pointActionModal').classList.remove('hidden');
+      });
+    }
+
+    function closePointActionModal() {
+      document.getElementById('pointActionModal').classList.add('hidden');
+      pointActionPending = null;
+    }
+
+    function executePointActionModal() {
+      if (!pointActionPending) return;
+      const { kidId, points } = pointActionPending;
+      const kid = appData.kids.find(k => k.id === kidId);
+      const note = document.getElementById('pointModalNote').value.trim();
+
+      if (kid) {
+        kid.points += points;
+        const defaultText = `Earned ${points} point${points > 1 ? 's' : ''}`;
+        if (!kid.history) kid.history = [];
+        kid.history.unshift({
+          id: 'act-' + Date.now(),
+          text: defaultText,
+          note: note || '',
+          pts: `+${points}`,
+          date: 'Just now'
+        });
+
+        saveData();
+        renderPointsBoard();
+        closePointActionModal();
+
+        if (points === 5) {
+          playChime('rocket');
+          showToast(`🚀 +5 Points for ${kid.name}!`, '🚀');
+        } else {
+          playChime('tap');
+          showToast(`+${points} for ${kid.name}! ⭐`, '⭐');
+        }
+      }
+    }
+
+    function requestCelebrateAllPrompt() {
+      requireParentPin(() => {
+        document.getElementById('celebrateAllNote').value = '';
+        document.getElementById('celebrateAllModal').classList.remove('hidden');
+      });
+    }
+
+    function closeCelebrateAllModal() {
+      document.getElementById('celebrateAllModal').classList.add('hidden');
+    }
+
+    function executeCelebrateAllAction() {
+      const note = document.getElementById('celebrateAllNote').value.trim();
+      appData.kids.forEach(kid => {
+        kid.points += 2;
+        if (!kid.history) kid.history = [];
+        kid.history.unshift({
+          id: 'act-' + Date.now(),
+          text: 'Earned 2 points',
+          note: note ? `Celebration: ${note}` : 'Family Celebration All-Star!',
+          pts: '+2',
+          date: 'Just now'
+        });
+      });
+
+      saveData();
+      renderPointsBoard();
+      closeCelebrateAllModal();
+      playChime('fanfare');
+      showToast('🎉 +2 Points awarded to Atlas, Renn, and Elio!', '🎉');
+    }
+
+    function openKidProfileModal(kidId) {
+      editingKidProfileId = kidId;
+      const kid = appData.kids.find(k => k.id === kidId);
+      if (!kid) return;
+
+      document.getElementById('kidProfileSub').textContent = `Personalize profile for ${kid.name}`;
+      document.getElementById('kidProfileGoalInput').value = kid.targetGoal || 30;
+
+      const emojiGrid = document.getElementById('emojiGrid');
+      emojiGrid.innerHTML = '';
+      EMOJI_OPTIONS.forEach(emoji => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `p-2 rounded-xl text-center tap-scale transition-all ${kid.avatar === emoji ? 'bg-indigo-600 shadow-md scale-110' : 'hover:bg-slate-200'}`;
+        btn.textContent = emoji;
+        btn.onclick = () => {
+          kid.avatar = emoji;
+          openKidProfileModal(kidId);
+        };
+        emojiGrid.appendChild(btn);
+      });
+
+      const colorGrid = document.getElementById('colorPickerGrid');
+      colorGrid.innerHTML = '';
+      Object.keys(THEME_COLORS).forEach(cKey => {
+        const t = THEME_COLORS[cKey];
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `h-10 rounded-xl ${t.accentBg} tap-scale transition-all flex items-center justify-center text-white font-bold text-xs ${kid.color === cKey ? 'ring-3 ring-indigo-600 ring-offset-2 scale-105' : 'opacity-85 hover:opacity-100'}`;
+        if (kid.color === cKey) btn.innerHTML = '✓';
+        btn.onclick = () => {
+          kid.color = cKey;
+          openKidProfileModal(kidId);
+        };
+        colorGrid.appendChild(btn);
+      });
+
+      document.getElementById('kidProfileModal').classList.remove('hidden');
+    }
+
+    function closeKidProfileModal() {
+      document.getElementById('kidProfileModal').classList.add('hidden');
+      editingKidProfileId = null;
+    }
+
+    function saveKidProfileModal() {
+      if (!editingKidProfileId) return;
+      const kid = appData.kids.find(k => k.id === editingKidProfileId);
+      if (kid) {
+        const newGoal = parseInt(document.getElementById('kidProfileGoalInput').value, 10);
+        if (!isNaN(newGoal) && newGoal > 0) kid.targetGoal = newGoal;
+        saveData();
+        renderPointsBoard();
+        showToast(`Profile updated for ${kid.name}! ✨`, '🎨');
+      }
+      closeKidProfileModal();
+    }
+
+    function renderChoresView() {
+      const today = getTodayKey();
+      const earnerSelector = document.getElementById('choreEarnerSelector');
+      earnerSelector.innerHTML = '';
+
+      appData.kids.forEach(kid => {
+        const theme = THEME_COLORS[kid.color] || THEME_COLORS.blue;
+        const isActive = activeChoreKidId === kid.id;
+        const btn = document.createElement('button');
+        btn.className = `px-3.5 py-2 rounded-2xl font-bold font-heading text-xs sm:text-sm tap-scale flex items-center gap-1.5 transition-all ${
+          isActive ? `${theme.accentBg} text-white shadow-sm ring-2 ring-indigo-500 ring-offset-1` : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+        }`;
+        btn.innerHTML = `<span>${kid.avatar}</span> <span>${kid.name}</span>`;
+        btn.onclick = () => {
+          activeChoreKidId = kid.id;
+          renderChoresView();
+        };
+        earnerSelector.appendChild(btn);
+      });
+
+      renderDailyChoreSummary();
+
+      // Featured Chore Banner
+      const featured = appData.chores.find(c => c.id === appData.featuredChoreId);
+      const featBox = document.getElementById('featuredChoreBox');
+      if (featured) {
+        featBox.classList.remove('hidden');
+        featBox.classList.add('flex');
+        document.getElementById('featuredChoreEmoji').textContent = featured.emoji || '⭐';
+        document.getElementById('featuredChoreTitle').textContent = featured.title;
+        const featPtsNum = parseInt(featured.points, 10);
+        document.getElementById('featuredChorePts').textContent = (featPtsNum && featPtsNum > 0) ? `Earns +${featPtsNum} Points!` : '';
+        document.getElementById('featuredChoreDate').textContent = new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+
+        const featActions = document.getElementById('featuredChoreActions');
+        featActions.innerHTML = '';
+        appData.kids.forEach(k => {
+          if (featured.applicableKids && featured.applicableKids.length > 0 && !featured.applicableKids.includes(k.id)) return;
+          const completions = (appData.choreCompletions[today] && appData.choreCompletions[today][featured.id]) || [];
+          const isDone = completions.includes(k.id);
+
+          const wrap = document.createElement('div');
+          wrap.className = 'flex items-center gap-1';
+
+          if (isDone) {
+            wrap.innerHTML = `
+              <span class="px-2.5 py-1.5 rounded-xl bg-black/20 text-white/90 text-xs font-bold font-heading flex items-center gap-1">
+                ✓ ${k.avatar} ${k.name} Done
+              </span>
+              <button onclick="undoChoreByKid('${featured.id}', '${k.id}')" class="px-2 py-1.5 rounded-xl bg-white/25 hover:bg-white/40 text-white text-xs font-bold tap-scale" title="Undo this chore">
+                ↩️ Undo
+              </button>
+            `;
+          } else {
+            const btn = document.createElement('button');
+            btn.className = "px-3 py-2 rounded-xl text-xs font-bold tap-scale font-heading flex items-center gap-1 bg-white text-amber-950 hover:bg-amber-100 shadow-xs";
+            btn.innerHTML = `${k.avatar} ${k.name} Claim`;
+            btn.onclick = () => claimChoreByKid(featured.id, k.id);
+            wrap.appendChild(btn);
+          }
+          featActions.appendChild(wrap);
+        });
+      } else {
+        featBox.classList.add('hidden');
+      }
+
+      // Chores Catalog
+      const currentKid = appData.kids.find(k => k.id === activeChoreKidId) || appData.kids[0];
+      const currentTheme = THEME_COLORS[currentKid.color] || THEME_COLORS.blue;
+      const catalog = document.getElementById('choresCatalogGrid');
+      catalog.innerHTML = '';
+
+      const applicableChores = appData.chores.filter(c => {
+        if (!c.applicableKids || c.applicableKids.length === 0) return true;
+        return c.applicableKids.includes(currentKid.id);
+      });
+
+      applicableChores.forEach(chore => {
+        const completions = (appData.choreCompletions[today] && appData.choreCompletions[today][chore.id]) || [];
+        const isCompletedByActiveKid = completions.includes(currentKid.id);
+        const ptsNum = parseInt(chore.points, 10);
+        const hasPoints = !isNaN(ptsNum) && ptsNum > 0;
+        const card = document.createElement('div');
+        card.className = "bg-white rounded-3xl p-5 border border-slate-200/90 shadow-xs flex flex-col justify-between";
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-start justify-between gap-2 mb-3">
+              <div class="flex items-center gap-3">
+                <span class="text-3xl">${chore.emoji || '🧹'}</span>
+                <div>
+                  <h4 class="font-bold font-heading text-slate-800 text-base leading-snug">${chore.title}</h4>
+                  ${hasPoints ? `
+                    <span class="text-xs font-bold font-mono px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800">
+                      +${ptsNum} pts
+                    </span>
+                  ` : ''}
+                </div>
+              </div>
+            </div>
+
+            <!-- Participation Badges -->
+            <div class="mb-4">
+              <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Done Today:</span>
+              <div class="flex flex-wrap gap-1.5">
+                ${completions.length > 0 ? completions.map(kId => {
+                  const bKid = appData.kids.find(k => k.id === kId);
+                  return bKid ? `<span class="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">${bKid.avatar} ${bKid.name}</span>` : '';
+                }).join('') : '<span class="text-xs text-slate-400 italic">None yet today</span>'}
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-2">
+            ${isCompletedByActiveKid ? `
+              <div class="flex gap-2 items-center">
+                <div class="flex-1 py-3 px-2 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold font-heading text-xs text-center flex items-center justify-center gap-1">
+                  <span>✓</span> Completed by ${currentKid.name}
+                </div>
+                <button onclick="undoChoreByKid('${chore.id}', '${currentKid.id}')" class="px-3.5 py-3 rounded-2xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 font-bold font-heading text-xs tap-scale flex items-center gap-1 shrink-0" title="Undo / Not completed properly">
+                  <span>↩️</span> Undo
+                </button>
+              </div>
+            ` : `
+              <button onclick="claimChoreByKid('${chore.id}', '${currentKid.id}')" class="w-full py-3 rounded-2xl font-bold font-heading text-xs sm:text-sm tap-scale transition-all flex items-center justify-center gap-1.5 ${currentTheme.btnBg} shadow-xs">
+                ${hasPoints ? `Claim Completed (+${ptsNum} pts)` : 'Mark Complete ✓'}
+              </button>
+            `}
+          </div>
+        `;
+        catalog.appendChild(card);
+      });
+    }
+
+    function toggleSummaryAccordion() {
+      isSummaryExpanded = !isSummaryExpanded;
+      const drawer = document.getElementById('summaryAccordionDrawer');
+      const arrow = document.getElementById('summaryToggleIcon');
+      const label = document.getElementById('summaryToggleLabel');
+      if (isSummaryExpanded) {
+        drawer.classList.remove('hidden');
+        if (arrow) arrow.textContent = '▲';
+        if (label) label.textContent = 'Hide';
+      } else {
+        drawer.classList.add('hidden');
+        if (arrow) arrow.textContent = '▼';
+        if (label) label.textContent = 'Show';
+      }
+    }
+
+    function renderDailyChoreSummary() {
+      const today = getTodayKey();
+      const list = (appData.choreLog && appData.choreLog[today]) || [];
+      const badge = document.getElementById('summaryBadgeCount');
+      const grid = document.getElementById('summaryListGrid');
+      if (badge) badge.textContent = `${list.length} Completed`;
+      if (!grid) return;
+
+      if (list.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full py-6 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-400 text-xs font-medium">
+            ✨ No chores marked complete yet today. As Atlas, Renn, and Elio complete tasks, they will roll up here!
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = list.map((item, idx) => {
+        const kid = appData.kids.find(k => k.id === item.kidId) || { name: item.kidName, avatar: '👦', color: 'blue' };
+        const theme = THEME_COLORS[kid.color] || THEME_COLORS.blue;
+        const pts = item.points || 0;
+        return `
+          <div class="p-3 rounded-2xl border ${theme.border} ${theme.cardBg} flex items-center justify-between gap-2 shadow-2xs bg-white">
+            <div class="flex items-center gap-2.5 truncate">
+              <span class="text-2xl shrink-0">${kid.avatar}</span>
+              <div class="truncate">
+                <span class="font-bold text-slate-800 text-xs font-heading block truncate">${item.choreTitle}</span>
+                <span class="text-[11px] font-bold ${theme.text}">${kid.name} • ${item.time}</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              ${pts > 0 ? `
+                <span class="px-2 py-0.5 rounded-lg text-xs font-bold font-mono bg-emerald-100 text-emerald-800">
+                  +${pts}
+                </span>
+              ` : `
+                <span class="text-xs font-bold text-emerald-600 font-mono">
+                  ✓
+                </span>
+              `}
+              <button onclick="undoChoreByKid('${item.choreId}', '${item.kidId}')" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs flex items-center justify-center tap-scale" title="Undo this chore">
+                ↩️
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function claimChoreByKid(choreId, kidId) {
+      const today = getTodayKey();
+      const chore = appData.chores.find(c => c.id === choreId);
+      const kid = appData.kids.find(k => k.id === kidId);
+      if (!chore || !kid) return;
+
+      if (!appData.choreCompletions[today]) appData.choreCompletions[today] = {};
+      if (!appData.choreCompletions[today][chore.id]) appData.choreCompletions[today][chore.id] = [];
+
+      if (appData.choreCompletions[today][chore.id].includes(kid.id)) {
+        showToast(`${kid.name} has already claimed this chore today!`, 'ℹ️');
+        return;
+      }
+
+      appData.choreCompletions[today][chore.id].push(kid.id);
+
+      if (!appData.choreLog[today]) appData.choreLog[today] = [];
+      const pts = parseInt(chore.points, 10) || 0;
+      const timeStr = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+
+      appData.choreLog[today].unshift({
+        choreId: chore.id,
+        choreTitle: chore.title,
+        kidId: kid.id,
+        kidName: kid.name,
+        points: pts,
+        time: timeStr
+      });
+
+      if (pts > 0) {
+        kid.points += pts;
+        if (!kid.history) kid.history = [];
+        kid.history.unshift({
+          id: 'act-' + Date.now(),
+          text: `Earned ${pts} point${pts > 1 ? 's' : ''}`,
+          note: `Chore: ${chore.title}`,
+          pts: `+${pts}`,
+          date: 'Just now'
+        });
+        showToast(`Awesome! +${pts} points to ${kid.name}! ⭐`, '⭐');
+      } else {
+        if (!kid.history) kid.history = [];
+        kid.history.unshift({
+          id: 'act-' + Date.now(),
+          text: 'Completed chore',
+          note: chore.title,
+          pts: '✓',
+          date: 'Just now'
+        });
+        showToast(`Great job! ${chore.title} marked complete! ✨`, '✅');
+      }
+
+      saveData();
+      renderChoresView();
+      renderPointsBoard();
+      playChime('tap');
+    }
+
+    function undoChoreByKid(choreId, kidId) {
+      const today = getTodayKey();
+      const chore = appData.chores.find(c => c.id === choreId);
+      const kid = appData.kids.find(k => k.id === kidId);
+      if (!chore || !kid) return;
+
+      if (appData.choreCompletions[today] && appData.choreCompletions[today][chore.id]) {
+        appData.choreCompletions[today][chore.id] = appData.choreCompletions[today][chore.id].filter(id => id !== kidId);
+      }
+
+      if (appData.choreLog[today]) {
+        const logIdx = appData.choreLog[today].findIndex(entry => entry.choreId === choreId && entry.kidId === kidId);
+        if (logIdx !== -1) {
+          appData.choreLog[today].splice(logIdx, 1);
+        }
+      }
+
+      const pts = parseInt(chore.points, 10) || 0;
+      if (pts > 0) {
+        kid.points = Math.max(0, kid.points - pts);
+        if (!kid.history) kid.history = [];
+        kid.history.unshift({
+          id: 'act-' + Date.now(),
+          text: `Undone chore: ${chore.title}`,
+          note: 'Marked incomplete / reverted',
+          pts: `-${pts}`,
+          date: 'Just now'
+        });
+      } else {
+        if (!kid.history) kid.history = [];
+        kid.history.unshift({
+          id: 'act-' + Date.now(),
+          text: `Undone chore: ${chore.title}`,
+          note: 'Marked incomplete / reverted',
+          pts: '↩️',
+          date: 'Just now'
+        });
+      }
+
+      saveData();
+      renderChoresView();
+      renderPointsBoard();
+      playChime('tap');
+      showToast(`Chore undone for ${kid.name}. Points updated! ↩️`, '↩️');
+    }
+
+    function renderShopView() {
+      const pendingList = document.getElementById('pendingRewardsList');
+      const pendingBadge = document.getElementById('pendingCountBadge');
+      const list = appData.pendingRewards || [];
+      pendingBadge.textContent = `${list.length} Pending`;
+
+      if (list.length === 0) {
+        pendingList.innerHTML = `
+          <div class="py-5 text-center bg-white rounded-2xl border border-dashed border-amber-200 text-amber-900/60 text-xs font-medium">
+            🎉 All purchased rewards have been given! Any newly redeemed prizes will appear right here.
+          </div>
+        `;
+      } else {
+        pendingList.innerHTML = list.map(item => `
+          <div class="bg-white p-3.5 rounded-2xl border border-amber-200 flex items-center justify-between gap-3 shadow-2xs">
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">${item.emoji || '🎁'}</span>
+              <div>
+                <h4 class="font-bold font-heading text-slate-800 text-sm leading-tight">${item.rewardTitle}</h4>
+                <p class="text-xs text-amber-800 font-bold">Purchased by ${item.kidName} (${item.cost} pts)</p>
+              </div>
+            </div>
+            <button onclick="requireParentPin(() => fulfillPendingReward('${item.id}'))" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-xs tap-scale shrink-0">
+              Fulfill Reward 🎁
+            </button>
+          </div>
+        `).join('');
+      }
+
+      const shopperGrid = document.getElementById('shopperCardsGrid');
+      shopperGrid.innerHTML = '';
+      appData.kids.forEach(kid => {
+        const theme = THEME_COLORS[kid.color] || THEME_COLORS.blue;
+        const isSelected = activeShopperId === kid.id;
+        const card = document.createElement('div');
+        card.onclick = () => {
+          activeShopperId = kid.id;
+          renderShopView();
+        };
+        card.className = `p-4 rounded-3xl border-2 transition-all cursor-pointer tap-scale ${
+          isSelected ? `${theme.border} ${theme.cardBg} bg-white shadow-md ring-2 ring-indigo-500` : 'border-slate-200 bg-white hover:border-slate-300'
+        }`;
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">${kid.avatar}</span>
+              <div>
+                <h4 class="font-bold font-heading text-slate-800 text-base leading-tight">${kid.name}</h4>
+                <span class="text-xs font-bold text-slate-400">Target: ${kid.targetGoal} pts</span>
+              </div>
+            </div>
+            <span class="px-3 py-1 rounded-xl font-bold font-heading text-sm ${theme.accentBg} text-white shadow-2xs">
+              ${kid.points} pts
+            </span>
+          </div>
+        `;
+        shopperGrid.appendChild(card);
+      });
+
+      const shopper = appData.kids.find(k => k.id === activeShopperId) || appData.kids[0];
+      const shopperTheme = THEME_COLORS[shopper.color] || THEME_COLORS.blue;
+
+      const t1 = (appData.rewards || []).filter(r => r.cost <= 10).sort((a,b) => a.cost - b.cost);
+      const t2 = (appData.rewards || []).filter(r => r.cost > 10 && r.cost <= 20).sort((a,b) => a.cost - b.cost);
+      const t3 = (appData.rewards || []).filter(r => r.cost > 20).sort((a,b) => a.cost - b.cost);
+
+      renderRewardTier('rewardsTier1', t1, shopper, shopperTheme);
+      renderRewardTier('rewardsTier2', t2, shopper, shopperTheme);
+      renderRewardTier('rewardsTier3', t3, shopper, shopperTheme);
+    }
+
+    function renderRewardTier(elementId, items, shopper, theme) {
+      const container = document.getElementById(elementId);
+      container.innerHTML = '';
+
+      if (items.length === 0) {
+        container.innerHTML = `<p class="col-span-full text-xs text-slate-400 italic py-2">No rewards currently in this category.</p>`;
+        return;
+      }
+
+      items.forEach(reward => {
+        const canAfford = shopper.points >= reward.cost;
+        const card = document.createElement('div');
+        card.className = "bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs flex flex-col justify-between";
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-start justify-between gap-2 mb-3">
+              <div class="flex items-center gap-3">
+                <span class="text-3xl">${reward.emoji || '🎁'}</span>
+                <div>
+                  <h4 class="font-bold font-heading text-slate-800 text-base leading-snug">${reward.title}</h4>
+                  <span class="text-xs font-bold font-mono text-indigo-600">${reward.cost} Points</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-100 flex gap-2">
+            ${canAfford ? `
+              <button onclick="requestCheckoutReward('${reward.id}')" class="w-full py-2.5 rounded-2xl ${theme.btnBg} font-bold font-heading text-xs sm:text-sm tap-scale shadow-xs flex items-center justify-center gap-1.5">
+                <span>🎁</span> Redeem Reward
+              </button>
+            ` : `
+              <button disabled class="flex-1 py-2 rounded-xl bg-slate-100 text-slate-400 font-bold text-xs cursor-not-allowed">
+                Need ${reward.cost - shopper.points} more
+              </button>
+              <button onclick="setRewardAsGoal('${reward.cost}', '${reward.title}')" class="px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs tap-scale shrink-0" title="Set this reward as my progress target!">
+                🎯 Set as Goal
+              </button>
+            `}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function setRewardAsGoal(costPoints, rewardTitle) {
+      const shopper = appData.kids.find(k => k.id === activeShopperId);
+      if (!shopper) return;
+      shopper.targetGoal = parseInt(costPoints, 10);
+      saveData();
+      renderShopView();
+      renderPointsBoard();
+      playChime('tap');
+      showToast(`🎯 ${shopper.name}'s goal updated to ${costPoints} pts for ${rewardTitle}!`, '🎯');
+    }
+
+    function requestCheckoutReward(rewardId) {
+      const reward = appData.rewards.find(r => r.id === rewardId);
+      const shopper = appData.kids.find(k => k.id === activeShopperId);
+      if (!reward || !shopper) return;
+
+      document.getElementById('checkoutTitle').textContent = reward.title;
+      document.getElementById('checkoutEmoji').textContent = reward.emoji || '🎁';
+      document.getElementById('checkoutCostText').textContent = `Cost: ${reward.cost} Points (${shopper.points} pts available)`;
+      document.getElementById('checkoutDesc').textContent = `${shopper.name} will have ${shopper.points - reward.cost} points remaining after checkout.`;
+
+      const confirmBtn = document.getElementById('checkoutConfirmBtn');
+      const theme = THEME_COLORS[shopper.color] || THEME_COLORS.blue;
+      confirmBtn.className = `flex-1 py-3 rounded-xl ${theme.btnBg} font-bold text-xs shadow-md tap-scale`;
+
+      document.getElementById('checkoutModal').classList.remove('hidden');
+      confirmBtn.onclick = () => {
+        if (shopper.points >= reward.cost) {
+          shopper.points -= reward.cost;
+          if (!shopper.history) shopper.history = [];
+          shopper.history.unshift({
+            id: 'act-' + Date.now(),
+            text: `Redeemed ${reward.title}`,
+            note: 'Pending parent fulfillment',
+            pts: `-${reward.cost}`,
+            date: 'Just now'
+          });
+
+          if (!appData.pendingRewards) appData.pendingRewards = [];
+          appData.pendingRewards.unshift({
+            id: 'pr-' + Date.now(),
+            kidId: shopper.id,
+            kidName: shopper.name,
+            rewardTitle: reward.title,
+            emoji: reward.emoji || '🎁',
+            cost: reward.cost,
+            date: 'Today'
+          });
+
+          saveData();
+          closeCheckoutModal();
+          renderShopView();
+          renderPointsBoard();
+          playChime('fanfare');
+          showToast(`🎉 Reward redeemed! Waiting for Mom & Dad to fulfill!`, '🎁');
+        }
+      };
+    }
+
+    function closeCheckoutModal() {
+      document.getElementById('checkoutModal').classList.add('hidden');
+    }
+
+    function fulfillPendingReward(pendingId) {
+      if (!appData.pendingRewards) return;
+      const index = appData.pendingRewards.findIndex(p => p.id === pendingId);
+      if (index !== -1) {
+        const item = appData.pendingRewards[index];
+        appData.pendingRewards.splice(index, 1);
+        saveData();
+        renderShopView();
+        playChime('tap');
+        showToast(`Delivered & fulfilled: ${item.rewardTitle} for ${item.kidName}! 🎉`, '✅');
+      }
+    }
+
+    function renderAdminView() {
+      document.getElementById('adminBannerHead').value = appData.banner.heading || '';
+      document.getElementById('adminBannerSub').value = appData.banner.subtext || '';
+      document.getElementById('adminPinInput').value = appData.parentPin || '1234';
+      document.getElementById('adminSyncUrlInput').value = localStorage.getItem('parent_points_sync_url') || '';
+
+      const adjustSelect = document.getElementById('manualAdjustKidSelect');
+      adjustSelect.innerHTML = '';
+      appData.kids.forEach(kid => {
+        const opt = document.createElement('option');
+        opt.value = kid.id;
+        opt.textContent = `${kid.avatar} ${kid.name} (${kid.points} pts)`;
+        adjustSelect.appendChild(opt);
+      });
+
+      const kidsList = document.getElementById('adminKidsList');
+      kidsList.innerHTML = '';
+      appData.kids.forEach(kid => {
+        const div = document.createElement('div');
+        div.className = "p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2";
+        div.innerHTML = `
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-2xl">${kid.avatar}</span>
+            <span class="font-bold text-slate-800 text-sm font-heading">${kid.name}</span>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-500">Date of Birth (YYYY-MM-DD)</label>
+            <input type="date" value="${kid.dob || ''}" onchange="updateKidDob('${kid.id}', this.value)" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 text-xs font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+          </div>
+          <div class="flex justify-between items-center text-xs pt-1">
+            <span class="text-slate-400">Current Balance:</span>
+            <span class="font-mono font-bold text-indigo-700">${kid.points} pts</span>
+          </div>
+        `;
+        kidsList.appendChild(div);
+      });
+
+      const choresList = document.getElementById('adminChoresList');
+      choresList.innerHTML = '';
+      appData.chores.forEach(chore => {
+        const div = document.createElement('div');
+        div.className = "p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs";
+        const isFeatured = appData.featuredChoreId === chore.id;
+        const ptsNum = parseInt(chore.points, 10);
+        const hasPoints = !isNaN(ptsNum) && ptsNum > 0;
+        
+        div.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="text-2xl shrink-0">${chore.emoji || '🧹'}</span>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-800 text-sm">${chore.title}</span>
+                ${hasPoints ? `
+                  <span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-mono font-bold text-[11px]">+${ptsNum} pts</span>
+                ` : ''}
+              </div>
+
+              <!-- Quick Inline Kid Toggles -->
+              <div class="flex items-center gap-1.5 mt-1.5">
+                <span class="text-[11px] font-bold text-slate-400 mr-1">Assigned:</span>
+                ${appData.kids.map(k => {
+                  const isAssigned = (chore.applicableKids || []).includes(k.id);
+                  return `
+                    <button type="button" onclick="toggleChoreKid('${chore.id}', '${k.id}')" class="px-2.5 py-1 rounded-lg font-bold text-[11px] tap-scale transition-all flex items-center gap-1 ${
+                      isAssigned 
+                        ? 'bg-indigo-600 text-white shadow-2xs' 
+                        : 'bg-slate-200 text-slate-400 hover:bg-slate-300'
+                    }">
+                      <span>${k.avatar}</span> <span>${k.name}</span>
+                      <span class="text-[10px] ml-0.5">${isAssigned ? '✓' : '+'}</span>
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1.5 self-end md:self-auto shrink-0">
+            <button onclick="setFeaturedChore('${chore.id}')" class="px-2.5 py-1.5 rounded-xl text-xs font-bold tap-scale ${isFeatured ? 'bg-amber-400 text-amber-950 font-bold' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}">
+              ${isFeatured ? '★ Featured' : '☆ Feature'}
+            </button>
+            <button onclick="openEditChoreModal('${chore.id}')" class="px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs tap-scale flex items-center gap-1">
+              ✏️ Edit
+            </button>
+            <button onclick="deleteChore('${chore.id}')" class="w-8 h-8 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-600 font-bold tap-scale flex items-center justify-center">✕</button>
+          </div>
+        `;
+        choresList.appendChild(div);
+      });
+
+      const rewardsList = document.getElementById('adminRewardsList');
+      rewardsList.innerHTML = '';
+      appData.rewards.forEach(reward => {
+        const div = document.createElement('div');
+        div.className = "p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3 text-xs";
+        div.innerHTML = `
+          <div class="flex items-center gap-2.5">
+            <span class="text-2xl">${reward.emoji || '🎁'}</span>
+            <div>
+              <span class="font-bold text-slate-800">${reward.title}</span>
+              <span class="text-[11px] text-indigo-600 font-mono font-bold block">${reward.cost} pts</span>
+            </div>
+          </div>
+          <button onclick="deleteReward('${reward.id}')" class="w-7 h-7 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-600 font-bold tap-scale flex items-center justify-center">✕</button>
+        `;
+        rewardsList.appendChild(div);
+      });
+    }
+
+    function setManualAdjustPreset(val) {
+      document.getElementById('manualAdjustAmount').value = val;
+    }
+
+    function executeManualAdjust(actionType) {
+      const kidId = document.getElementById('manualAdjustKidSelect').value;
+      const amount = parseInt(document.getElementById('manualAdjustAmount').value, 10);
+      const note = document.getElementById('manualAdjustNote').value.trim();
+
+      if (isNaN(amount) || amount <= 0) {
+        showToast('Please enter a valid points amount.', '⚠️');
+        return;
+      }
+
+      const kid = appData.kids.find(k => k.id === kidId);
+      if (!kid) return;
+
+      if (!kid.history) kid.history = [];
+
+      if (actionType === 'add') {
+        kid.points += amount;
+        kid.history.unshift({
+          id: 'act-' + Date.now(),
+          text: `Admin adjustment (+${amount})`,
+          note: note || 'Manual points adjustment by parent',
+          pts: `+${amount}`,
+          date: 'Just now'
+        });
+        showToast(`Added +${amount} points to ${kid.name}!`, '➕');
+      } else {
+        kid.points = Math.max(0, kid.points - amount);
+        kid.history.unshift({
+          id: 'act-' + Date.now(),
+          text: `Admin deduction (-${amount})`,
+          note: note || 'Manual points deduction by parent',
+          pts: `-${amount}`,
+          date: 'Just now'
+        });
+        showToast(`Deducted -${amount} points from ${kid.name}.`, '➖');
+      }
+
+      document.getElementById('manualAdjustNote').value = '';
+      saveData();
+      renderAdminView();
+      renderPointsBoard();
+      playChime('tap');
+    }
+
+    function saveBannerSettings() {
+      appData.banner.heading = document.getElementById('adminBannerHead').value.trim() || DEFAULT_DATA.banner.heading;
+      appData.banner.subtext = document.getElementById('adminBannerSub').value.trim() || DEFAULT_DATA.banner.subtext;
+      saveData();
+      showToast('Banner messages saved! 📢', '✅');
+    }
+
+    function saveNewPin() {
+      const pin = document.getElementById('adminPinInput').value.trim();
+      if (pin.length === 4 && !isNaN(pin)) {
+        appData.parentPin = pin;
+        saveData();
+        showToast('Parent PIN updated successfully! 🔐', '✅');
+      } else {
+        showToast('PIN must be exactly 4 digits.', '⚠️');
+      }
+    }
+
+    function updateKidDob(kidId, newDob) {
+      const kid = appData.kids.find(k => k.id === kidId);
+      if (kid) {
+        kid.dob = newDob;
+        saveData();
+        showToast(`Birthday updated for ${kid.name}!`, '🎂');
+      }
+    }
+
+    function setFeaturedChore(choreId) {
+      appData.featuredChoreId = choreId;
+      saveData();
+      renderAdminView();
+      showToast('Featured daily chore updated! ⭐', '⭐');
+    }
+
+    function toggleChoreKid(choreId, kidId) {
+      const chore = appData.chores.find(c => c.id === choreId);
+      if (!chore) return;
+      if (!chore.applicableKids) chore.applicableKids = [];
+      
+      const idx = chore.applicableKids.indexOf(kidId);
+      if (idx !== -1) {
+        chore.applicableKids.splice(idx, 1);
+      } else {
+        chore.applicableKids.push(kidId);
+      }
+      saveData();
+      renderAdminView();
+      playChime('tap');
+    }
+
+    function deleteChore(choreId) {
+      appData.chores = appData.chores.filter(c => c.id !== choreId);
+      saveData();
+      renderAdminView();
+      showToast('Chore removed.', '🗑️');
+    }
+
+    function deleteReward(rewardId) {
+      appData.rewards = appData.rewards.filter(r => r.id !== rewardId);
+      saveData();
+      renderAdminView();
+      showToast('Reward removed.', '🗑️');
+    }
+
+    function openAddChoreModal() {
+      editingChoreId = null;
+      document.getElementById('choreEditModalTitle').textContent = 'New Chore';
+      document.getElementById('choreInputTitle').value = '';
+      document.getElementById('choreInputEmoji').value = '🧹';
+      document.getElementById('choreInputPoints').value = '2';
+      document.getElementById('choreCheckAtlas').checked = true;
+      document.getElementById('choreCheckRenn').checked = true;
+      document.getElementById('choreCheckElio').checked = true;
+      document.getElementById('choreEditModal').classList.remove('hidden');
+    }
+
+    function openEditChoreModal(choreId) {
+      editingChoreId = choreId;
+      const chore = appData.chores.find(c => c.id === choreId);
+      if (!chore) return;
+
+      document.getElementById('choreEditModalTitle').textContent = 'Edit Chore & Points';
+      document.getElementById('choreInputTitle').value = chore.title || '';
+      document.getElementById('choreInputEmoji').value = chore.emoji || '🧹';
+      document.getElementById('choreInputPoints').value = (chore.points !== undefined && chore.points !== null) ? chore.points : '';
+      
+      const applicable = chore.applicableKids || [];
+      document.getElementById('choreCheckAtlas').checked = applicable.includes('kid-atlas');
+      document.getElementById('choreCheckRenn').checked = applicable.includes('kid-renn');
+      document.getElementById('choreCheckElio').checked = applicable.includes('kid-elio');
+      
+      document.getElementById('choreEditModal').classList.remove('hidden');
+    }
+
+    function closeChoreEditModal() {
+      document.getElementById('choreEditModal').classList.add('hidden');
+      editingChoreId = null;
+    }
+
+    function saveChoreEditModal() {
+      const title = document.getElementById('choreInputTitle').value.trim();
+      const emoji = document.getElementById('choreInputEmoji').value.trim() || '⚡';
+      const ptsVal = document.getElementById('choreInputPoints').value.trim();
+      if (!title) {
+        showToast('Please enter a chore title.', '⚠️');
+        return;
+      }
+
+      const applicable = [];
+      if (document.getElementById('choreCheckAtlas').checked) applicable.push('kid-atlas');
+      if (document.getElementById('choreCheckRenn').checked) applicable.push('kid-renn');
+      if (document.getElementById('choreCheckElio').checked) applicable.push('kid-elio');
+
+      const parsedPoints = ptsVal === '' ? '' : parseInt(ptsVal, 10);
+
+      if (editingChoreId) {
+        const chore = appData.chores.find(c => c.id === editingChoreId);
+        if (chore) {
+          chore.title = title;
+          chore.emoji = emoji;
+          chore.points = parsedPoints;
+          chore.applicableKids = applicable;
+          showToast('Chore updated! ✏️', '✅');
+        }
+      } else {
+        appData.chores.push({
+          id: 'c-' + Date.now(),
+          title,
+          emoji,
+          points: parsedPoints,
+          applicableKids: applicable
+        });
+        showToast('New chore added! 🧹', '✅');
+      }
+
+      saveData();
+      closeChoreEditModal();
+      renderAdminView();
+    }
+
+    function openAddRewardModal() {
+      document.getElementById('rewardInputTitle').value = '';
+      document.getElementById('rewardInputEmoji').value = '🎁';
+      document.getElementById('rewardInputCost').value = '10';
+      document.getElementById('rewardEditModal').classList.remove('hidden');
+    }
+
+    function closeRewardEditModal() {
+      document.getElementById('rewardEditModal').classList.add('hidden');
+    }
+
+    function saveRewardEditModal() {
+      const title = document.getElementById('rewardInputTitle').value.trim();
+      const emoji = document.getElementById('rewardInputEmoji').value.trim() || '🎁';
+      const cost = parseInt(document.getElementById('rewardInputCost').value, 10);
+      if (!title || isNaN(cost) || cost < 1) {
+        showToast('Please enter valid reward title and cost.', '⚠️');
+        return;
+      }
+
+      appData.rewards.push({
+        id: 'r-' + Date.now(),
+        title,
+        emoji,
+        cost
+      });
+
+      saveData();
+      closeRewardEditModal();
+      renderAdminView();
+      showToast('New reward added to shop! 🎁', '✅');
+    }
+
+    function saveSyncEndpoint() {
+      const url = document.getElementById('adminSyncUrlInput').value.trim();
+      localStorage.setItem('parent_points_sync_url', url);
+      showToast('Cloud sync endpoint saved. Syncing...', '☁️');
+      syncWithGoogleSheet(true);
+    }
+
+    function syncWithGoogleSheet(forcePull = false) {
+      const url = localStorage.getItem('parent_points_sync_url');
+      if (!url) return;
+
+      if (forcePull) {
+        fetch(url)
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.kids) {
+              appData = data;
+              saveData();
+              renderPointsBoard();
+              showToast('Synced fresh data from Google Sheet! ☁️', '☁️');
+            }
+          })
+          .catch(() => {});
+      } else {
+        fetch(url, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(appData)
+        }).catch(() => {});
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadData();
+      renderPointsBoard();
+    });
+  </script>
+</body>
+</html>
