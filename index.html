@@ -346,6 +346,17 @@
           </div>
         </div>
 
+        <!-- Start Fresh -->
+        <div class="mt-8 pt-8 border-t border-slate-100">
+          <h3 class="text-base font-bold font-heading text-rose-900 mb-2 flex items-center gap-2">
+            <span>🧹</span> Start Fresh
+          </h3>
+          <p class="text-xs text-slate-500 font-medium mb-3">Reset all kids' points and activity, today's chore records, and pending reward requests. Profiles, chores, rewards, and settings will be kept.</p>
+          <button onclick="requireParentPin(resetFamilyActivity)" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl tap-scale">
+            Reset Points & Activity
+          </button>
+        </div>
+
         <!-- Cloud Sync Endpoint -->
         <div class="mt-8 pt-8 border-t border-slate-100">
           <h3 class="text-base font-bold font-heading text-indigo-950 mb-2 flex items-center gap-2">
@@ -1806,6 +1817,28 @@
       renderAdminView();
       renderPointsBoard();
       playChime('tap');
+    }
+
+    function resetFamilyActivity() {
+      const confirmed = window.confirm(
+        'Start fresh for everyone? This will reset all point balances, clear activity histories and chore records, and remove pending reward requests. Profiles, chores, rewards, and settings will be kept.'
+      );
+      if (!confirmed) return;
+
+      appData.kids.forEach(kid => {
+        kid.points = 0;
+        kid.history = [];
+      });
+      appData.choreCompletions = {};
+      appData.choreLog = {};
+      appData.pendingRewards = [];
+
+      saveData();
+      renderPointsBoard();
+      renderChoresView();
+      renderShopView();
+      renderAdminView();
+      showToast('Points and activity reset. Your family setup was kept.', '✅');
     }
 
     function saveBannerSettings() {
