@@ -4,6 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Parent Points Tracker</title>
+
+  <!-- Mobile & PWA meta tags -->
+  <meta name="theme-color" content="#d97706">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Parent Points">
+  <link rel="manifest" href="./manifest.webmanifest">
+
   <!-- Google Fonts: Fredoka & Quicksand -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -116,7 +125,7 @@
         </div>
       </div>
 
-      <!-- Daily Chore Summary Reel (Accordion with Undo support) -->
+      <!-- Daily Chore Summary Reel -->
       <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden">
         <button onclick="toggleSummaryAccordion()" class="w-full px-6 py-4.5 bg-gradient-to-r from-slate-50 via-indigo-50/30 to-white flex items-center justify-between text-left hover:bg-slate-100/60 transition-colors">
           <div class="flex items-center gap-3">
@@ -222,7 +231,7 @@
           </button>
         </div>
 
-        <!-- NEW: Manual Points Adjustment Section -->
+        <!-- Manual Points Adjustment Section -->
         <div class="mt-6 p-6 rounded-3xl bg-gradient-to-r from-indigo-50/70 via-purple-50/50 to-pink-50/40 border border-indigo-200/80">
           <div class="flex items-center gap-2.5 mb-2">
             <span class="text-2xl">⚖️</span>
@@ -245,11 +254,10 @@
             </div>
             <div>
               <label class="block text-xs font-bold text-slate-600 mb-1">Reason / Note (Optional)</label>
-              <input type="text" id="manualAdjustNote" placeholder="e.g. Helped neighbor rake leaves" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-medium bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+              <input type="text" id="manualAdjustNote" placeholder="e.g. Helped clean garage" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-medium bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
             </div>
           </div>
 
-          <!-- Quick presets and action buttons -->
           <div class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-indigo-100">
             <div class="flex items-center gap-1.5">
               <span class="text-[11px] font-bold text-slate-400 mr-1">Presets:</span>
@@ -353,6 +361,7 @@
     </section>
   </main>
 
+  <!-- Modals -->
   <div id="pinModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 text-center">
       <div class="flex justify-between items-center mb-2">
@@ -391,7 +400,7 @@
       <button onclick="closePointActionModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-sm tap-scale flex items-center justify-center">✕</button>
       <div id="pointModalIcon" class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 text-3xl flex items-center justify-center mx-auto mb-3 shadow-inner">⭐</div>
       <h3 id="pointModalTitle" class="text-xl font-bold font-heading text-slate-800">Add Points</h3>
-      <p id="pointModalSubtitle" class="text-xs text-slate-500 mb-4">Adding points to Atlas</p>
+      <p id="pointModalSubtitle" class="text-xs text-slate-500 mb-4">Adding points</p>
       
       <div class="text-left mb-5">
         <label class="block text-xs font-bold text-slate-600 mb-1">Add Note (Optional)</label>
@@ -536,6 +545,12 @@
   </div>
 
   <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./service-worker.js')
+        .catch(error => console.error('Service worker registration failed:', error));
+    }
+
+    // --- 2. THEMES & DEFAULTS ---
     const THEME_COLORS = {
       blue: {
         id: 'blue',
@@ -1206,7 +1221,7 @@
         featBox.classList.add('hidden');
       }
 
-      // Chores Catalog with inline UNDO support
+      // Chores Catalog
       const currentKid = appData.kids.find(k => k.id === activeChoreKidId) || appData.kids[0];
       const currentTheme = THEME_COLORS[currentKid.color] || THEME_COLORS.blue;
       const catalog = document.getElementById('choresCatalogGrid');
@@ -1253,7 +1268,6 @@
             </div>
           </div>
 
-          <!-- Bottom Action Buttons: Claim vs Undo -->
           <div class="mt-2">
             ${isCompletedByActiveKid ? `
               <div class="flex gap-2 items-center">
@@ -1404,12 +1418,10 @@
       const kid = appData.kids.find(k => k.id === kidId);
       if (!chore || !kid) return;
 
-      // 1. Remove kid from chore completions
       if (appData.choreCompletions[today] && appData.choreCompletions[today][chore.id]) {
         appData.choreCompletions[today][chore.id] = appData.choreCompletions[today][chore.id].filter(id => id !== kidId);
       }
 
-      // 2. Remove entry from today's chore log
       if (appData.choreLog[today]) {
         const logIdx = appData.choreLog[today].findIndex(entry => entry.choreId === choreId && entry.kidId === kidId);
         if (logIdx !== -1) {
@@ -1417,7 +1429,6 @@
         }
       }
 
-      // 3. Deduct points if points were originally awarded
       const pts = parseInt(chore.points, 10) || 0;
       if (pts > 0) {
         kid.points = Math.max(0, kid.points - pts);
@@ -1646,7 +1657,6 @@
       document.getElementById('adminPinInput').value = appData.parentPin || '1234';
       document.getElementById('adminSyncUrlInput').value = localStorage.getItem('parent_points_sync_url') || '';
 
-      // Populate Manual Adjust Kid Dropdown
       const adjustSelect = document.getElementById('manualAdjustKidSelect');
       adjustSelect.innerHTML = '';
       appData.kids.forEach(kid => {
@@ -1656,7 +1666,6 @@
         adjustSelect.appendChild(opt);
       });
 
-      // Render Kids DOB and current point totals
       const kidsList = document.getElementById('adminKidsList');
       kidsList.innerHTML = '';
       appData.kids.forEach(kid => {
@@ -1679,7 +1688,6 @@
         kidsList.appendChild(div);
       });
 
-      // Render Admin Chores Listing
       const choresList = document.getElementById('adminChoresList');
       choresList.innerHTML = '';
       appData.chores.forEach(chore => {
@@ -1733,7 +1741,6 @@
         choresList.appendChild(div);
       });
 
-      // Render Admin Rewards Listing
       const rewardsList = document.getElementById('adminRewardsList');
       rewardsList.innerHTML = '';
       appData.rewards.forEach(reward => {
@@ -1753,7 +1760,6 @@
       });
     }
 
-    // Manual Point Adjustment Logic
     function setManualAdjustPreset(val) {
       document.getElementById('manualAdjustAmount').value = val;
     }
@@ -1866,7 +1872,6 @@
       showToast('Reward removed.', '🗑️');
     }
 
-    // Modal: Add / Edit Chore
     function openAddChoreModal() {
       editingChoreId = null;
       document.getElementById('choreEditModalTitle').textContent = 'New Chore';
@@ -1943,7 +1948,6 @@
       renderAdminView();
     }
 
-    // Modal: Add Reward
     function openAddRewardModal() {
       document.getElementById('rewardInputTitle').value = '';
       document.getElementById('rewardInputEmoji').value = '🎁';
@@ -1984,29 +1988,41 @@
       syncWithGoogleSheet(true);
     }
 
-    function syncWithGoogleSheet(forcePull = false) {
+    async function syncWithGoogleSheet(forcePull = false) {
       const url = localStorage.getItem('parent_points_sync_url');
       if (!url) return;
 
-      if (forcePull) {
-        fetch(url)
-          .then(res => res.json())
-          .then(data => {
-            if (data && data.kids) {
-              appData = data;
-              saveData();
-              renderPointsBoard();
-              showToast('Synced fresh data from Google Sheet! ☁️', '☁️');
-            }
-          })
-          .catch(() => {});
-      } else {
-        fetch(url, {
+      try {
+        if (forcePull) {
+          const response = await fetch(url);
+          if (!response.ok) throw new Error(`Sync endpoint returned HTTP ${response.status}`);
+
+          const data = await response.json();
+          if (!data || !Array.isArray(data.kids)) {
+            throw new Error('Sync endpoint returned invalid app data');
+          }
+
+          localStorage.setItem('parent_points_data_v3', JSON.stringify(data));
+          appData = data;
+          renderPointsBoard();
+          showToast('Synced fresh data from Google Sheet! ☁️', '☁️');
+          return;
+        }
+
+        await fetch(url, {
           method: 'POST',
           mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
           body: JSON.stringify(appData)
-        }).catch(() => {});
+        });
+      } catch (error) {
+        console.error('Google Sheets sync failed:', error);
+        showToast(
+          forcePull
+            ? 'Cloud sync failed. Check the URL and Apps Script deployment.'
+            : 'Cloud sync failed. Your changes are still saved on this device.',
+          '⚠️'
+        );
       }
     }
 
