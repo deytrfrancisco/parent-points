@@ -389,7 +389,7 @@
           <h3 class="text-base font-bold font-heading text-indigo-950 mb-2 flex items-center gap-2">
             <span>☁️</span> Google Drive / Google Sheets Cloud Sync
           </h3>
-          <p class="text-xs text-slate-500 font-medium mb-3">Paste your Google Apps Script Web App URL ending in <code>/exec</code> to sync points automatically between your phone and tablet.</p>
+          <p class="text-xs text-slate-500 font-medium mb-3">Deploy the <a href="./google-apps-script.js" target="_blank" rel="noopener" class="text-indigo-600 underline">revision-checking Apps Script</a>, then paste its Web App URL ending in <code>/exec</code>. Every device must use the updated app and script for conflict protection.</p>
           <div class="flex flex-col sm:flex-row gap-2 max-w-xl">
             <input type="url" id="adminSyncUrlInput" placeholder="https://script.google.com/macros/s/.../exec" class="min-w-0 w-full flex-1 px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
             <button onclick="saveSyncEndpoint()" class="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl tap-scale hover:bg-emerald-700 shrink-0">Connect & Sync</button>
@@ -669,40 +669,31 @@
           id: 'kid-atlas',
           name: 'Atlas',
           dob: '2019-07-17',
-          points: 38,
+          points: 0,
           targetGoal: 50,
           color: 'blue',
           avatar: '🚀',
-          history: [
-            { id: 'h1', text: 'Earned 5 points', note: 'Vacuumed the family room', pts: '+5', date: 'Yesterday' },
-            { id: 'h2', text: 'Earned 2 points', note: 'Piano practice 20 mins', pts: '+2', date: '2 days ago' }
-          ]
+          history: []
         },
         {
           id: 'kid-renn',
           name: 'Renn',
           dob: '2022-05-11',
-          points: 22,
+          points: 0,
           targetGoal: 30,
           color: 'orange',
           avatar: '🦖',
-          history: [
-            { id: 'h3', text: 'Earned 2 points', note: 'Cleaned up train tracks', pts: '+2', date: 'Yesterday' },
-            { id: 'h4', text: 'Earned 1 point', note: 'Brushed teeth nicely', pts: '+1', date: 'Yesterday' }
-          ]
+          history: []
         },
         {
           id: 'kid-elio',
           name: 'Elio',
           dob: '2024-04-05',
-          points: 14,
+          points: 0,
           targetGoal: 20,
           color: 'green',
           avatar: '🚗',
-          history: [
-            { id: 'h5', text: 'Earned 1 point', note: 'Put shoes in closet', pts: '+1', date: 'Today' },
-            { id: 'h6', text: 'Earned 2 points', note: 'Ate all veggies', pts: '+2', date: 'Yesterday' }
-          ]
+          history: []
         }
       ],
       featuredChoreId: 'c-piano',
@@ -724,9 +715,7 @@
         { id: 'r-movie', title: 'Family Movie Night Choice & Popcorn', emoji: '🍿', cost: 25 },
         { id: 'r-lego', title: 'New Lego Set / Big Toy Wish', emoji: '🧱', cost: 45 }
       ],
-      pendingRewards: [
-        { id: 'pr-1', kidId: 'kid-atlas', kidName: 'Atlas', rewardTitle: '30 Mins Extra Screen / Game', emoji: '🎮', cost: 15, date: 'Today' }
-      ],
+      pendingRewards: [],
       choreCompletions: {},
       choreLog: {}
     };
@@ -744,6 +733,91 @@
     let isSummaryExpanded = true;
     let audioContext = null;
     let activeReorder = null;
+    let localDataCorrupt = false;
+    let corruptDataBackupSaved = true;
+    let syncQueue = Promise.resolve();
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[character]);
+    }
+
+    function htmlArg(value) {
+      return escapeHtml(JSON.stringify(String(value ?? '')));
+    }
+
+    function isValidAppData(data) {
+      const isObject = value => value && typeof value === 'object' && !Array.isArray(value);
+      const isStringArray = value => Array.isArray(value) && value.every(item => typeof item === 'string');
+      const validCompletions = !data || data.choreCompletions === undefined || (
+        isObject(data.choreCompletions) &&
+        Object.values(data.choreCompletions).every(day =>
+          isObject(day) && Object.values(day).every(isStringArray)
+        )
+      );
+      const validChoreLog = !data || data.choreLog === undefined || (
+        isObject(data.choreLog) &&
+        Object.values(data.choreLog).every(day =>
+          Array.isArray(day) &&
+          day.every(entry =>
+            isObject(entry) &&
+            typeof entry.choreId === 'string' &&
+            typeof entry.kidId === 'string' &&
+            (entry.points === undefined || Number.isFinite(Number(entry.points)))
+          )
+        )
+      );
+
+      return Boolean(
+        isObject(data) &&
+        Array.isArray(data.kids) &&
+        data.kids.length > 0 &&
+        data.kids.every(kid =>
+          isObject(kid) &&
+          typeof kid.id === 'string' &&
+          typeof kid.name === 'string' &&
+          Number.isFinite(Number(kid.points)) &&
+          Number.isFinite(Number(kid.targetGoal)) &&
+          Number(kid.targetGoal) > 0 &&
+          (kid.history === undefined || (
+            Array.isArray(kid.history) && kid.history.every(isObject)
+          ))
+        ) &&
+        Array.isArray(data.chores) &&
+        data.chores.every(chore =>
+          isObject(chore) &&
+          typeof chore.id === 'string' &&
+          typeof chore.title === 'string' &&
+          (chore.applicableKids === undefined || isStringArray(chore.applicableKids))
+        ) &&
+        Array.isArray(data.rewards) &&
+        data.rewards.every(reward =>
+          isObject(reward) &&
+          typeof reward.id === 'string' &&
+          typeof reward.title === 'string' &&
+          Number.isFinite(Number(reward.cost)) &&
+          Number(reward.cost) > 0
+        ) &&
+        (data.pendingRewards === undefined || (
+          Array.isArray(data.pendingRewards) &&
+          data.pendingRewards.every(item =>
+            isObject(item) &&
+            typeof item.id === 'string' &&
+            typeof item.rewardTitle === 'string' &&
+            typeof item.kidName === 'string' &&
+            Number.isFinite(Number(item.cost))
+          )
+        )) &&
+        (data.banner === undefined || isObject(data.banner)) &&
+        validCompletions &&
+        validChoreLog
+      );
+    }
 
     function getTodayKey() {
       const now = new Date();
@@ -751,11 +825,24 @@
     }
 
     function loadData() {
+      localDataCorrupt = false;
+      corruptDataBackupSaved = true;
       const saved = localStorage.getItem('parent_points_data_v3');
       if (saved) {
         try {
           appData = JSON.parse(saved);
-        } catch(e) {
+          if (!isValidAppData(appData)) {
+            throw new Error('Saved app data has an invalid structure');
+          }
+        } catch(error) {
+          console.error('Saved app data could not be parsed:', error);
+          localDataCorrupt = true;
+          try {
+            localStorage.setItem('parent_points_data_v3_corrupt_backup', saved);
+          } catch(backupError) {
+            console.error('Could not back up the unreadable app data:', backupError);
+            corruptDataBackupSaved = false;
+          }
           appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
         }
       } else {
@@ -769,6 +856,10 @@
     }
 
     function saveData() {
+      if (localDataCorrupt && !corruptDataBackupSaved) {
+        showToast('Could not back up unreadable saved data. Changes are not being saved on this device.', '⚠️');
+        return;
+      }
       localStorage.setItem('parent_points_data_v3', JSON.stringify(appData));
       syncWithGoogleSheet();
     }
@@ -969,21 +1060,21 @@
           <div>
             <div class="flex items-start justify-between gap-3 mb-4">
               <div class="flex items-center gap-3">
-                <button onclick="openKidProfileModal('${kid.id}')" class="w-14 h-14 rounded-2xl ${theme.accentBg} text-white flex items-center justify-center text-3xl shadow-inner tap-scale shrink-0" title="Tap to customize avatar and goal">
-                  ${kid.avatar}
+                <button onclick="openKidProfileModal(${htmlArg(kid.id)})" class="w-14 h-14 rounded-2xl ${theme.accentBg} text-white flex items-center justify-center text-3xl shadow-inner tap-scale shrink-0" title="Tap to customize avatar and goal">
+                  ${escapeHtml(kid.avatar)}
                 </button>
                 <div>
-                  <h3 class="text-xl font-bold font-heading text-slate-800 leading-tight">${kid.name}</h3>
+                  <h3 class="text-xl font-bold font-heading text-slate-800 leading-tight">${escapeHtml(kid.name)}</h3>
                   <div class="flex items-center gap-2 mt-0.5">
-                    <span class="text-xs font-bold text-slate-400">${ageText ? `Age ${ageText}` : ''}</span>
+                    <span class="text-xs font-bold text-slate-400">${ageText ? `Age ${escapeHtml(ageText)}` : ''}</span>
                     <span class="text-slate-300">•</span>
-                    <span class="text-xs font-bold ${theme.text}">Goal: ${kid.targetGoal} pts</span>
+                    <span class="text-xs font-bold ${theme.text}">Goal: ${escapeHtml(kid.targetGoal)} pts</span>
                   </div>
                 </div>
               </div>
               <div class="text-right shrink-0">
                 <span class="inline-block px-3 py-1 rounded-xl font-bold font-heading text-lg ${theme.accentBg} text-white shadow-xs">
-                  ${kid.points} <span class="text-xs font-normal">pts</span>
+                  ${escapeHtml(kid.points)} <span class="text-xs font-normal">pts</span>
                 </span>
               </div>
             </div>
@@ -999,36 +1090,36 @@
             </div>
 
             <div class="grid grid-cols-3 gap-2 mb-4">
-              <button onclick="requestPointModal('${kid.id}', 1)" class="py-2.5 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 text-slate-700 font-bold font-heading text-sm shadow-2xs tap-scale flex items-center justify-center gap-1">
+              <button onclick="requestPointModal(${htmlArg(kid.id)}, 1)" class="py-2.5 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 text-slate-700 font-bold font-heading text-sm shadow-2xs tap-scale flex items-center justify-center gap-1">
                 <span>⭐</span> +1
               </button>
-              <button onclick="requestPointModal('${kid.id}', 2)" class="py-2.5 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 text-slate-700 font-bold font-heading text-sm shadow-2xs tap-scale flex items-center justify-center gap-1">
+              <button onclick="requestPointModal(${htmlArg(kid.id)}, 2)" class="py-2.5 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 text-slate-700 font-bold font-heading text-sm shadow-2xs tap-scale flex items-center justify-center gap-1">
                 <span>🌟</span> +2
               </button>
-              <button onclick="requestPointModal('${kid.id}', 5)" class="py-2.5 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 text-slate-700 font-bold font-heading text-sm shadow-2xs tap-scale flex items-center justify-center gap-1">
+              <button onclick="requestPointModal(${htmlArg(kid.id)}, 5)" class="py-2.5 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 text-slate-700 font-bold font-heading text-sm shadow-2xs tap-scale flex items-center justify-center gap-1">
                 <span>🚀</span> +5
               </button>
             </div>
           </div>
 
           <div class="pt-3 border-t border-slate-200/60 flex flex-col gap-2">
-            <button onclick="toggleKidActivityDrawer('${kid.id}')" class="text-xs font-bold text-slate-500 hover:text-slate-700 flex items-center justify-between py-1">
+            <button onclick="toggleKidActivityDrawer(${htmlArg(kid.id)})" class="text-xs font-bold text-slate-500 hover:text-slate-700 flex items-center justify-between py-1">
               <span>Recent Activity (Last 5)</span>
-              <span id="act-arrow-${kid.id}" class="text-slate-400 font-mono">▼</span>
+              <span id="act-arrow-${escapeHtml(kid.id)}" class="text-slate-400 font-mono">▼</span>
             </button>
-            <div id="act-drawer-${kid.id}" class="hidden space-y-1.5 pt-1">
+            <div id="act-drawer-${escapeHtml(kid.id)}" class="hidden space-y-1.5 pt-1">
               ${(kid.history || []).slice(0, 5).map(item => `
                 <div class="p-2 rounded-xl bg-white/80 border border-slate-100 flex items-center justify-between text-xs">
                   <div>
-                    <span class="font-bold text-slate-700">${item.text}</span>
-                    ${item.note ? `<p class="text-[11px] text-slate-400 italic">${item.note}</p>` : ''}
+                    <span class="font-bold text-slate-700">${escapeHtml(item.text)}</span>
+                    ${item.note ? `<p class="text-[11px] text-slate-400 italic">${escapeHtml(item.note)}</p>` : ''}
                   </div>
-                  <span class="font-bold font-mono ${item.pts.startsWith('+') ? 'text-emerald-600' : 'text-rose-500'}">${item.pts}</span>
+                  <span class="font-bold font-mono ${String(item.pts || '').startsWith('+') ? 'text-emerald-600' : 'text-rose-500'}">${escapeHtml(item.pts)}</span>
                 </div>
               `).join('') || '<p class="text-[11px] text-slate-400 italic text-center py-2">No recent activity yet.</p>'}
             </div>
 
-            <button onclick="openShopForKid('${kid.id}')" class="w-full mt-2 py-2 rounded-xl ${theme.btnBg} font-bold text-xs shadow-xs tap-scale flex items-center justify-center gap-1.5">
+            <button onclick="openShopForKid(${htmlArg(kid.id)})" class="w-full mt-2 py-2 rounded-xl ${theme.btnBg} font-bold text-xs shadow-xs tap-scale flex items-center justify-center gap-1.5">
               <span>🎁</span> Open Reward Shop
             </button>
           </div>
@@ -1207,7 +1298,7 @@
         btn.className = `px-3.5 py-2 rounded-2xl font-bold font-heading text-xs sm:text-sm tap-scale flex items-center gap-1.5 transition-all ${
           isActive ? `${theme.accentBg} text-white shadow-sm ring-2 ring-indigo-500 ring-offset-1` : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
         }`;
-        btn.innerHTML = `<span>${kid.avatar}</span> <span>${kid.name}</span>`;
+        btn.textContent = `${kid.avatar} ${kid.name}`;
         btn.onclick = () => {
           activeChoreKidId = kid.id;
           renderChoresView();
@@ -1242,16 +1333,16 @@
           if (isDone) {
             wrap.innerHTML = `
               <span class="px-2.5 py-1.5 rounded-xl bg-black/20 text-white/90 text-xs font-bold font-heading flex items-center gap-1">
-                ✓ ${k.avatar} ${k.name} Done
+                ✓ ${escapeHtml(k.avatar)} ${escapeHtml(k.name)} Done
               </span>
-              <button onclick="undoChoreByKid('${featured.id}', '${k.id}')" class="px-2 py-1.5 rounded-xl bg-white/25 hover:bg-white/40 text-white text-xs font-bold tap-scale" title="Undo this chore">
+              <button onclick="undoChoreByKid(${htmlArg(featured.id)}, ${htmlArg(k.id)})" class="px-2 py-1.5 rounded-xl bg-white/25 hover:bg-white/40 text-white text-xs font-bold tap-scale" title="Undo this chore">
                 ↩️ Undo
               </button>
             `;
           } else {
             const btn = document.createElement('button');
             btn.className = "px-3 py-2 rounded-xl text-xs font-bold tap-scale font-heading flex items-center gap-1 bg-white text-amber-950 hover:bg-amber-100 shadow-xs";
-            btn.innerHTML = `${k.avatar} ${k.name} Claim`;
+            btn.textContent = `${k.avatar} ${k.name} Claim`;
             btn.onclick = () => claimChoreByKid(featured.id, k.id);
             wrap.appendChild(btn);
           }
@@ -1284,9 +1375,9 @@
           <div>
             <div class="flex items-start justify-between gap-2 mb-3">
               <div class="flex items-center gap-3">
-                <span class="text-3xl">${chore.emoji || '🧹'}</span>
+                <span class="text-3xl">${escapeHtml(chore.emoji || '🧹')}</span>
                 <div>
-                  <h4 class="font-bold font-heading text-slate-800 text-base leading-snug">${chore.title}</h4>
+                  <h4 class="font-bold font-heading text-slate-800 text-base leading-snug">${escapeHtml(chore.title)}</h4>
                   ${hasPoints ? `
                     <span class="text-xs font-bold font-mono px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800">
                       +${ptsNum} pts
@@ -1302,7 +1393,7 @@
               <div class="flex flex-wrap gap-1.5">
                 ${completions.length > 0 ? completions.map(kId => {
                   const bKid = appData.kids.find(k => k.id === kId);
-                  return bKid ? `<span class="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">${bKid.avatar} ${bKid.name}</span>` : '';
+                  return bKid ? `<span class="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">${escapeHtml(bKid.avatar)} ${escapeHtml(bKid.name)}</span>` : '';
                 }).join('') : '<span class="text-xs text-slate-400 italic">None yet today</span>'}
               </div>
             </div>
@@ -1312,14 +1403,14 @@
             ${isCompletedByActiveKid ? `
               <div class="flex gap-2 items-center">
                 <div class="flex-1 py-3 px-2 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold font-heading text-xs text-center flex items-center justify-center gap-1">
-                  <span>✓</span> Completed by ${currentKid.name}
+                  <span>✓</span> Completed by ${escapeHtml(currentKid.name)}
                 </div>
-                <button onclick="undoChoreByKid('${chore.id}', '${currentKid.id}')" class="px-3.5 py-3 rounded-2xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 font-bold font-heading text-xs tap-scale flex items-center gap-1 shrink-0" title="Undo / Not completed properly">
+                <button onclick="undoChoreByKid(${htmlArg(chore.id)}, ${htmlArg(currentKid.id)})" class="px-3.5 py-3 rounded-2xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 font-bold font-heading text-xs tap-scale flex items-center gap-1 shrink-0" title="Undo / Not completed properly">
                   <span>↩️</span> Undo
                 </button>
               </div>
             ` : `
-              <button onclick="claimChoreByKid('${chore.id}', '${currentKid.id}')" class="w-full py-3 rounded-2xl font-bold font-heading text-xs sm:text-sm tap-scale transition-all flex items-center justify-center gap-1.5 ${currentTheme.btnBg} shadow-xs">
+              <button onclick="claimChoreByKid(${htmlArg(chore.id)}, ${htmlArg(currentKid.id)})" class="w-full py-3 rounded-2xl font-bold font-heading text-xs sm:text-sm tap-scale transition-all flex items-center justify-center gap-1.5 ${currentTheme.btnBg} shadow-xs">
                 ${hasPoints ? `Claim Completed (+${ptsNum} pts)` : 'Mark Complete ✓'}
               </button>
             `}
@@ -1369,10 +1460,10 @@
         return `
           <div class="p-3 rounded-2xl border ${theme.border} ${theme.cardBg} flex items-center justify-between gap-2 shadow-2xs bg-white">
             <div class="flex items-center gap-2.5 truncate">
-              <span class="text-2xl shrink-0">${kid.avatar}</span>
+              <span class="text-2xl shrink-0">${escapeHtml(kid.avatar)}</span>
               <div class="truncate">
-                <span class="font-bold text-slate-800 text-xs font-heading block truncate">${item.choreTitle}</span>
-                <span class="text-[11px] font-bold ${theme.text}">${kid.name} • ${item.time}</span>
+                <span class="font-bold text-slate-800 text-xs font-heading block truncate">${escapeHtml(item.choreTitle)}</span>
+                <span class="text-[11px] font-bold ${theme.text}">${escapeHtml(kid.name)} • ${escapeHtml(item.time)}</span>
               </div>
             </div>
             <div class="flex items-center gap-1.5 shrink-0">
@@ -1385,7 +1476,7 @@
                   ✓
                 </span>
               `}
-              <button onclick="undoChoreByKid('${item.choreId}', '${item.kidId}')" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs flex items-center justify-center tap-scale" title="Undo this chore">
+              <button onclick="undoChoreByKid(${htmlArg(item.choreId)}, ${htmlArg(item.kidId)})" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs flex items-center justify-center tap-scale" title="Undo this chore">
                 ↩️
               </button>
             </div>
@@ -1454,28 +1545,36 @@
 
     function undoChoreByKid(choreId, kidId) {
       const today = getTodayKey();
-      const chore = appData.chores.find(c => c.id === choreId);
       const kid = appData.kids.find(k => k.id === kidId);
-      if (!chore || !kid) return;
+      if (!kid) return;
 
-      if (appData.choreCompletions[today] && appData.choreCompletions[today][chore.id]) {
-        appData.choreCompletions[today][chore.id] = appData.choreCompletions[today][chore.id].filter(id => id !== kidId);
+      const completionList = appData.choreCompletions[today]?.[choreId];
+      const hasCompletion = Array.isArray(completionList) && completionList.includes(kidId);
+      const log = appData.choreLog[today] || [];
+      const logIdx = log.findIndex(entry => entry.choreId === choreId && entry.kidId === kidId);
+      if (!hasCompletion && logIdx === -1) return;
+
+      const logEntry = logIdx === -1 ? null : log[logIdx];
+      const chore = appData.chores.find(c => c.id === choreId);
+      const choreTitle = logEntry?.choreTitle || chore?.title || 'Deleted chore';
+      const recordedPoints = Number(logEntry?.points);
+      const pts = Number.isFinite(recordedPoints)
+        ? recordedPoints
+        : (parseInt(chore?.points, 10) || 0);
+
+      if (hasCompletion) {
+        appData.choreCompletions[today][choreId] = completionList.filter(id => id !== kidId);
+      }
+      if (logIdx !== -1) {
+        log.splice(logIdx, 1);
       }
 
-      if (appData.choreLog[today]) {
-        const logIdx = appData.choreLog[today].findIndex(entry => entry.choreId === choreId && entry.kidId === kidId);
-        if (logIdx !== -1) {
-          appData.choreLog[today].splice(logIdx, 1);
-        }
-      }
-
-      const pts = parseInt(chore.points, 10) || 0;
       if (pts > 0) {
         kid.points = Math.max(0, kid.points - pts);
         if (!kid.history) kid.history = [];
         kid.history.unshift({
           id: 'act-' + Date.now(),
-          text: `Undone chore: ${chore.title}`,
+          text: `Undone chore: ${choreTitle}`,
           note: 'Marked incomplete / reverted',
           pts: `-${pts}`,
           date: 'Just now'
@@ -1484,7 +1583,7 @@
         if (!kid.history) kid.history = [];
         kid.history.unshift({
           id: 'act-' + Date.now(),
-          text: `Undone chore: ${chore.title}`,
+          text: `Undone chore: ${choreTitle}`,
           note: 'Marked incomplete / reverted',
           pts: '↩️',
           date: 'Just now'
@@ -1514,13 +1613,13 @@
         pendingList.innerHTML = list.map(item => `
           <div class="bg-white p-3.5 rounded-2xl border border-amber-200 flex items-center justify-between gap-3 shadow-2xs">
             <div class="flex items-center gap-3">
-              <span class="text-3xl">${item.emoji || '🎁'}</span>
+              <span class="text-3xl">${escapeHtml(item.emoji || '🎁')}</span>
               <div>
-                <h4 class="font-bold font-heading text-slate-800 text-sm leading-tight">${item.rewardTitle}</h4>
-                <p class="text-xs text-amber-800 font-bold">Purchased by ${item.kidName} (${item.cost} pts)</p>
+                <h4 class="font-bold font-heading text-slate-800 text-sm leading-tight">${escapeHtml(item.rewardTitle)}</h4>
+                <p class="text-xs text-amber-800 font-bold">Purchased by ${escapeHtml(item.kidName)} (${escapeHtml(item.cost)} pts)</p>
               </div>
             </div>
-            <button onclick="requireParentPin(() => fulfillPendingReward('${item.id}'))" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-xs tap-scale shrink-0">
+            <button onclick="requireParentPin(() => fulfillPendingReward(${htmlArg(item.id)}))" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-xs tap-scale shrink-0">
               Fulfill Reward 🎁
             </button>
           </div>
@@ -1543,14 +1642,14 @@
         card.innerHTML = `
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <span class="text-3xl">${kid.avatar}</span>
+              <span class="text-3xl">${escapeHtml(kid.avatar)}</span>
               <div>
-                <h4 class="font-bold font-heading text-slate-800 text-base leading-tight">${kid.name}</h4>
-                <span class="text-xs font-bold text-slate-400">Target: ${kid.targetGoal} pts</span>
+                <h4 class="font-bold font-heading text-slate-800 text-base leading-tight">${escapeHtml(kid.name)}</h4>
+                <span class="text-xs font-bold text-slate-400">Target: ${escapeHtml(kid.targetGoal)} pts</span>
               </div>
             </div>
             <span class="px-3 py-1 rounded-xl font-bold font-heading text-sm ${theme.accentBg} text-white shadow-2xs">
-              ${kid.points} pts
+              ${escapeHtml(kid.points)} pts
             </span>
           </div>
         `;
@@ -1587,10 +1686,10 @@
           <div>
             <div class="flex items-start justify-between gap-2 mb-3">
               <div class="flex items-center gap-3">
-                <span class="text-3xl">${reward.emoji || '🎁'}</span>
+                <span class="text-3xl">${escapeHtml(reward.emoji || '🎁')}</span>
                 <div>
-                  <h4 class="font-bold font-heading text-slate-800 text-base leading-snug">${reward.title}</h4>
-                  <span class="text-xs font-bold font-mono text-indigo-600">${reward.cost} Points</span>
+                  <h4 class="font-bold font-heading text-slate-800 text-base leading-snug">${escapeHtml(reward.title)}</h4>
+                  <span class="text-xs font-bold font-mono text-indigo-600">${escapeHtml(reward.cost)} Points</span>
                 </div>
               </div>
             </div>
@@ -1598,14 +1697,14 @@
 
           <div class="mt-4 pt-3 border-t border-slate-100 flex gap-2">
             ${canAfford ? `
-              <button onclick="requestCheckoutReward('${reward.id}')" class="w-full py-2.5 rounded-2xl ${theme.btnBg} font-bold font-heading text-xs sm:text-sm tap-scale shadow-xs flex items-center justify-center gap-1.5">
+              <button onclick="requestCheckoutReward(${htmlArg(reward.id)})" class="w-full py-2.5 rounded-2xl ${theme.btnBg} font-bold font-heading text-xs sm:text-sm tap-scale shadow-xs flex items-center justify-center gap-1.5">
                 <span>🎁</span> Redeem Reward
               </button>
             ` : `
               <button disabled class="flex-1 py-2 rounded-xl bg-slate-100 text-slate-400 font-bold text-xs cursor-not-allowed">
-                Need ${reward.cost - shopper.points} more
+                Need ${escapeHtml(reward.cost - shopper.points)} more
               </button>
-              <button onclick="setRewardAsGoal('${reward.cost}', '${reward.title}')" class="px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs tap-scale shrink-0" title="Set this reward as my progress target!">
+              <button onclick="setRewardAsGoal(${Number(reward.cost)}, ${htmlArg(reward.title)})" class="px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs tap-scale shrink-0" title="Set this reward as my progress target!">
                 🎯 Set as Goal
               </button>
             `}
@@ -1713,16 +1812,16 @@
         div.className = "p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2";
         div.innerHTML = `
           <div class="flex items-center gap-2 mb-1">
-            <span class="text-2xl">${kid.avatar}</span>
-            <span class="font-bold text-slate-800 text-sm font-heading">${kid.name}</span>
+            <span class="text-2xl">${escapeHtml(kid.avatar)}</span>
+            <span class="font-bold text-slate-800 text-sm font-heading">${escapeHtml(kid.name)}</span>
           </div>
           <div>
             <label class="block text-[11px] font-bold text-slate-500">Date of Birth (YYYY-MM-DD)</label>
-            <input type="date" value="${kid.dob || ''}" onchange="updateKidDob('${kid.id}', this.value)" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 text-xs font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+            <input type="date" value="${escapeHtml(kid.dob || '')}" onchange="updateKidDob(${htmlArg(kid.id)}, this.value)" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 text-xs font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
           </div>
           <div class="flex justify-between items-center text-xs pt-1">
             <span class="text-slate-400">Current Balance:</span>
-            <span class="font-mono font-bold text-indigo-700">${kid.points} pts</span>
+            <span class="font-mono font-bold text-indigo-700">${escapeHtml(kid.points)} pts</span>
           </div>
         `;
         kidsList.appendChild(div);
@@ -1741,10 +1840,10 @@
         div.innerHTML = `
           <div class="flex items-center gap-3">
             <button type="button" class="reorder-handle text-slate-400 hover:text-indigo-600 text-2xl leading-none px-1" aria-label="Drag to reorder chore" title="Drag to reorder">⠿</button>
-            <span class="text-2xl shrink-0">${chore.emoji || '🧹'}</span>
+            <span class="text-2xl shrink-0">${escapeHtml(chore.emoji || '🧹')}</span>
             <div>
               <div class="flex items-center gap-2">
-                <span class="font-bold text-slate-800 text-sm">${chore.title}</span>
+                <span class="font-bold text-slate-800 text-sm">${escapeHtml(chore.title)}</span>
                 ${hasPoints ? `
                   <span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-mono font-bold text-[11px]">+${ptsNum} pts</span>
                 ` : ''}
@@ -1756,12 +1855,12 @@
                 ${appData.kids.map(k => {
                   const isAssigned = (chore.applicableKids || []).includes(k.id);
                   return `
-                    <button type="button" onclick="toggleChoreKid('${chore.id}', '${k.id}')" class="px-2.5 py-1 rounded-lg font-bold text-[11px] tap-scale transition-all flex items-center gap-1 ${
+                    <button type="button" onclick="toggleChoreKid(${htmlArg(chore.id)}, ${htmlArg(k.id)})" class="px-2.5 py-1 rounded-lg font-bold text-[11px] tap-scale transition-all flex items-center gap-1 ${
                       isAssigned 
                         ? 'bg-indigo-600 text-white shadow-2xs' 
                         : 'bg-slate-200 text-slate-400 hover:bg-slate-300'
                     }">
-                      <span>${k.avatar}</span> <span>${k.name}</span>
+                      <span>${escapeHtml(k.avatar)}</span> <span>${escapeHtml(k.name)}</span>
                       <span class="text-[10px] ml-0.5">${isAssigned ? '✓' : '+'}</span>
                     </button>
                   `;
@@ -1771,13 +1870,13 @@
           </div>
 
           <div class="flex items-center gap-1.5 self-end md:self-auto shrink-0">
-            <button onclick="setFeaturedChore('${chore.id}')" class="px-2.5 py-1.5 rounded-xl text-xs font-bold tap-scale ${isFeatured ? 'bg-amber-400 text-amber-950 font-bold' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}">
+            <button onclick="setFeaturedChore(${htmlArg(chore.id)})" class="px-2.5 py-1.5 rounded-xl text-xs font-bold tap-scale ${isFeatured ? 'bg-amber-400 text-amber-950 font-bold' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}">
               ${isFeatured ? '★ Featured' : '☆ Feature'}
             </button>
-            <button onclick="openEditChoreModal('${chore.id}')" class="px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs tap-scale flex items-center gap-1">
+            <button onclick="openEditChoreModal(${htmlArg(chore.id)})" class="px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs tap-scale flex items-center gap-1">
               ✏️ Edit
             </button>
-            <button onclick="deleteChore('${chore.id}')" class="w-8 h-8 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-600 font-bold tap-scale flex items-center justify-center">✕</button>
+            <button onclick="deleteChore(${htmlArg(chore.id)})" class="w-8 h-8 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-600 font-bold tap-scale flex items-center justify-center">✕</button>
           </div>
         `;
         choresList.appendChild(div);
@@ -1792,17 +1891,17 @@
         div.innerHTML = `
           <div class="flex items-center gap-2.5">
             <button type="button" class="reorder-handle text-slate-400 hover:text-indigo-600 text-2xl leading-none px-1" aria-label="Drag to reorder reward" title="Drag to reorder">⠿</button>
-            <span class="text-2xl">${reward.emoji || '🎁'}</span>
+            <span class="text-2xl">${escapeHtml(reward.emoji || '🎁')}</span>
             <div>
-              <span class="font-bold text-slate-800">${reward.title}</span>
-              <span class="text-[11px] text-indigo-600 font-mono font-bold block">${reward.cost} pts</span>
+              <span class="font-bold text-slate-800">${escapeHtml(reward.title)}</span>
+              <span class="text-[11px] text-indigo-600 font-mono font-bold block">${escapeHtml(reward.cost)} pts</span>
             </div>
           </div>
           <div class="flex items-center gap-1.5">
-            <button onclick="openEditRewardModal('${reward.id}')" class="px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs tap-scale flex items-center gap-1">
+            <button onclick="openEditRewardModal(${htmlArg(reward.id)})" class="px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs tap-scale flex items-center gap-1">
               ✏️ Edit
             </button>
-            <button onclick="deleteReward('${reward.id}')" class="w-7 h-7 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-600 font-bold tap-scale flex items-center justify-center">✕</button>
+            <button onclick="deleteReward(${htmlArg(reward.id)})" class="w-7 h-7 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-600 font-bold tap-scale flex items-center justify-center">✕</button>
           </div>
         `;
         rewardsList.appendChild(div);
@@ -2142,6 +2241,9 @@
 
     function saveSyncEndpoint() {
       const url = document.getElementById('adminSyncUrlInput').value.trim();
+      if (localStorage.getItem('parent_points_sync_url') !== url) {
+        localStorage.removeItem('parent_points_sync_revision_v1');
+      }
       localStorage.setItem('parent_points_sync_url', url);
       updateSyncStatus('Checking Google Sheets…');
       syncWithGoogleSheet(true);
@@ -2170,16 +2272,64 @@
       }
     }
 
-    async function sendDataToGoogleSheet(url) {
+    function isValidSyncResponse(response) {
+      return Boolean(
+        response &&
+        typeof response === 'object' &&
+        !Array.isArray(response) &&
+        Number.isSafeInteger(response.revision) &&
+        response.revision >= 0 &&
+        (response.data === null || isValidAppData(response.data))
+      );
+    }
+
+    function getStoredSyncRevision(url) {
+      const saved = localStorage.getItem('parent_points_sync_revision_v1');
+      if (!saved) return null;
+
+      try {
+        const state = JSON.parse(saved);
+        return state && state.url === url && Number.isSafeInteger(state.revision) && state.revision >= 0
+          ? state.revision
+          : null;
+      } catch(error) {
+        console.error('Saved Google Sheets revision could not be parsed:', error);
+        return null;
+      }
+    }
+
+    function storeSyncRevision(url, revision) {
+      localStorage.setItem('parent_points_sync_revision_v1', JSON.stringify({ url, revision }));
+    }
+
+    async function sendDataToGoogleSheet(url, snapshot, expectedRevision) {
       updateSyncStatus('Sending changes to Google Sheets…');
       await fetch(url, {
         method: 'POST',
         mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-        body: JSON.stringify(appData)
+        body: JSON.stringify({ data: JSON.parse(snapshot), expectedRevision })
       });
+
+      const result = await pullFromGoogleSheet(url);
+      if (!isValidSyncResponse(result)) {
+        throw new Error('Apps Script deployment does not support revision-checked sync');
+      }
+
+      const remoteSnapshot = result.data === null ? null : JSON.stringify(result.data);
+      if (remoteSnapshot !== snapshot) {
+        return { synced: false, result };
+      }
+
+      storeSyncRevision(url, result.revision);
       const time = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-      updateSyncStatus(`Upload sent at ${time} · Google Sheets cannot confirm receipt`);
+      updateSyncStatus(`Synced and verified with Google Sheets · ${time}`);
+      return { synced: true, result };
+    }
+
+    function reportSyncConflict() {
+      updateSyncStatus('Sync conflict · another device has newer data; your local changes are safe');
+      showToast('Another device changed the Sheet before this upload. Your local changes are safe; tap Sync now to resolve.', '⚠️');
     }
 
     function pullFromGoogleSheet(url) {
@@ -2214,30 +2364,88 @@
       });
     }
 
-    async function syncWithGoogleSheet(forcePull = false) {
+    function syncWithGoogleSheet(forcePull = false) {
+      const operation = syncQueue.then(() => performSyncWithGoogleSheet(forcePull));
+      syncQueue = operation.catch(error => {
+        console.error('Unexpected Google Sheets sync failure:', error);
+        updateSyncStatus('Sync failed · your changes are still saved on this device');
+        showToast('Cloud sync failed. Your changes are still saved on this device.', '⚠️');
+      });
+      return syncQueue;
+    }
+
+    async function performSyncWithGoogleSheet(forcePull = false) {
       const url = localStorage.getItem('parent_points_sync_url');
       if (!url) {
-        updateSyncStatus('Sync not set up · configure the URL in Admin');
+        updateSyncStatus(localDataCorrupt
+          ? 'Recovery needed · configure the Google Sheets URL in Admin'
+          : 'Sync not set up · configure the URL in Admin');
+        return;
+      }
+
+      if (localDataCorrupt && !forcePull) {
+        updateSyncStatus('Recovery needed · local data is unreadable; cloud uploads are paused');
         return;
       }
 
       try {
         if (forcePull) {
           updateSyncStatus('Checking Google Sheets…');
-          const data = await pullFromGoogleSheet(url);
+          const result = await pullFromGoogleSheet(url);
+          if (!isValidSyncResponse(result)) {
+            throw new Error('Apps Script deployment does not support revision-checked sync');
+          }
+          const data = result.data;
+
           if (data === null) {
-            await sendDataToGoogleSheet(url);
-            showToast('Google Sheet was empty. Sent this device’s data to initialize it.', '☁️');
+            if (localDataCorrupt) {
+              updateSyncStatus('Recovery needed · the Sheet is empty; unreadable local data was not uploaded');
+              showToast('Google Sheets is empty. Kept the unreadable local data and did not upload defaults.', '⚠️');
+              return;
+            }
+            const upload = await sendDataToGoogleSheet(url, JSON.stringify(appData), result.revision);
+            if (upload.synced) {
+              showToast('Google Sheet was empty. Initialized it and verified the saved data.', '☁️');
+            } else {
+              reportSyncConflict();
+            }
             return;
           }
 
-          if (!data || !Array.isArray(data.kids)) {
-            throw new Error('Sync endpoint returned invalid app data');
+          if (localDataCorrupt) {
+            const restoreLocalData = window.confirm(
+              corruptDataBackupSaved
+                ? 'This device’s saved data could not be read. A backup of it was kept on this device. Choose OK to restore this device from Google Sheets, or Cancel to leave it unchanged. No local data will be uploaded.'
+                : 'This device’s saved data could not be read, and a backup could not be saved. Choose OK to replace the unreadable local data with Google Sheets, or Cancel to leave it unchanged. No local data will be uploaded.'
+            );
+            if (!restoreLocalData) {
+              updateSyncStatus('Recovery needed · local data kept; no cloud data was changed');
+              showToast('Kept the unreadable local data. No data was uploaded.', '⚠️');
+              return;
+            }
+
+            const backupKept = corruptDataBackupSaved;
+            localStorage.setItem('parent_points_data_v3', JSON.stringify(data));
+            storeSyncRevision(url, result.revision);
+            appData = data;
+            localDataCorrupt = false;
+            corruptDataBackupSaved = true;
+            renderSyncedData();
+            const time = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            updateSyncStatus(`Restored from Google Sheets · ${time}`);
+            showToast(
+              backupKept
+                ? 'Restored this device from Google Sheets. The local backup was kept.'
+                : 'Restored this device from Google Sheets.',
+              '☁️'
+            );
+            return;
           }
 
           const localSnapshot = JSON.stringify(appData);
           const remoteSnapshot = JSON.stringify(data);
           if (localSnapshot === remoteSnapshot) {
+            storeSyncRevision(url, result.revision);
             const time = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
             updateSyncStatus(`Up to date with Google Sheets · checked ${time}`);
             showToast('This device is up to date with Google Sheets.', '☁️');
@@ -2248,12 +2456,17 @@
             'The Google Sheet and this device have different data. Choose OK to replace this device’s data with the Sheet, or Cancel to keep this device’s data and send it to the Sheet.'
           );
           if (!useRemoteData) {
-            await sendDataToGoogleSheet(url);
-            showToast('Kept this device’s data. Upload sent; Google Sheets cannot confirm receipt.', '☁️');
+            const upload = await sendDataToGoogleSheet(url, localSnapshot, result.revision);
+            if (upload.synced) {
+              showToast('Kept this device’s data. Google Sheets saved and verified it.', '☁️');
+            } else {
+              reportSyncConflict();
+            }
             return;
           }
 
           localStorage.setItem('parent_points_data_v3', JSON.stringify(data));
+          storeSyncRevision(url, result.revision);
           appData = data;
           renderSyncedData();
           const time = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
@@ -2262,13 +2475,52 @@
           return;
         }
 
-        await sendDataToGoogleSheet(url);
+        const expectedRevision = getStoredSyncRevision(url);
+        if (expectedRevision === null) {
+          updateSyncStatus('Checking Google Sheets…');
+          const result = await pullFromGoogleSheet(url);
+          if (!isValidSyncResponse(result)) {
+            throw new Error('Apps Script deployment does not support revision-checked sync');
+          }
+          if (result.data === null) {
+            const upload = await sendDataToGoogleSheet(url, JSON.stringify(appData), result.revision);
+            if (!upload.synced) reportSyncConflict();
+            return;
+          }
+
+          const localSnapshot = JSON.stringify(appData);
+          if (localSnapshot === JSON.stringify(result.data)) {
+            storeSyncRevision(url, result.revision);
+            const time = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            updateSyncStatus(`Up to date with Google Sheets · checked ${time}`);
+            return;
+          }
+
+          const useRemoteData = window.confirm(
+            'The Google Sheet and this device have different data. Choose OK to replace this device’s data with the Sheet, or Cancel to keep this device’s data and send it to the Sheet.'
+          );
+          if (useRemoteData) {
+            localStorage.setItem('parent_points_data_v3', JSON.stringify(result.data));
+            storeSyncRevision(url, result.revision);
+            appData = result.data;
+            renderSyncedData();
+            updateSyncStatus('Loaded from Google Sheets');
+            return;
+          }
+
+          const upload = await sendDataToGoogleSheet(url, localSnapshot, result.revision);
+          if (!upload.synced) reportSyncConflict();
+          return;
+        }
+
+        const upload = await sendDataToGoogleSheet(url, JSON.stringify(appData), expectedRevision);
+        if (!upload.synced) reportSyncConflict();
       } catch (error) {
         console.error('Google Sheets sync failed:', error);
         updateSyncStatus('Sync failed · your changes are still saved on this device');
         showToast(
-          forcePull
-            ? 'Cloud sync failed. Check the URL and Apps Script deployment.'
+          error.message === 'Apps Script deployment does not support revision-checked sync'
+            ? 'Cloud sync needs the updated revision-checking Apps Script. Install and redeploy its code.'
             : 'Cloud sync failed. Your changes are still saved on this device.',
           '⚠️'
         );
@@ -2282,6 +2534,14 @@
       document.addEventListener('pointercancel', cancelListReorder);
       loadData();
       renderPointsBoard();
+      if (localDataCorrupt) {
+        showToast(
+          corruptDataBackupSaved
+            ? 'Saved data was unreadable. A backup was kept; cloud sync will not overwrite it.'
+            : 'Saved data was unreadable and could not be backed up. Local changes are paused to protect it.',
+          '⚠️'
+        );
+      }
       syncWithGoogleSheet(true);
     });
   </script>
