@@ -97,6 +97,15 @@
     </div>
   </nav>
 
+  <div class="bg-indigo-50 border-b border-indigo-100">
+    <div class="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between gap-3">
+      <p id="syncStatus" class="text-[11px] sm:text-xs font-semibold text-slate-600" aria-live="polite">Checking sync status…</p>
+      <button type="button" onclick="requestSyncNow()" class="shrink-0 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold tap-scale">
+        ☁️ Sync now
+      </button>
+    </div>
+  </div>
+
   <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 transform -translate-y-12 opacity-0 pointer-events-none transition-all duration-300 bg-slate-900/90 backdrop-blur-md text-white font-bold px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-sm sm:text-base border border-slate-700/50">
     <span id="toastIcon" class="text-xl">✨</span>
     <span id="toastMsg">Notification message</span>
@@ -2134,8 +2143,43 @@
     function saveSyncEndpoint() {
       const url = document.getElementById('adminSyncUrlInput').value.trim();
       localStorage.setItem('parent_points_sync_url', url);
-      showToast('Cloud sync endpoint saved. Syncing...', '☁️');
+      updateSyncStatus('Checking Google Sheets…');
       syncWithGoogleSheet(true);
+    }
+
+    function updateSyncStatus(message) {
+      const status = document.getElementById('syncStatus');
+      if (status) status.textContent = message;
+    }
+
+    function requestSyncNow() {
+      if (!localStorage.getItem('parent_points_sync_url')) {
+        showToast('Add your Google Apps Script URL in Admin to sync.', '☁️');
+        requireParentPin(openParentAdminDirect);
+        return;
+      }
+      syncWithGoogleSheet(true);
+    }
+
+    function renderSyncedData() {
+      renderPointsBoard();
+      renderChoresView();
+      renderShopView();
+      if (!document.getElementById('view-admin').classList.contains('hidden')) {
+        renderAdminView();
+      }
+    }
+
+    async function sendDataToGoogleSheet(url) {
+      updateSyncStatus('Sending changes to Google Sheets…');
+      await fetch(url, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+        body: JSON.stringify(appData)
+      });
+      const time = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      updateSyncStatus(`Upload sent at ${time} · Google Sheets cannot confirm receipt`);
     }
 
     function pullFromGoogleSheet(url) {
@@ -2172,19 +2216,18 @@
 
     async function syncWithGoogleSheet(forcePull = false) {
       const url = localStorage.getItem('parent_points_sync_url');
-      if (!url) return;
+      if (!url) {
+        updateSyncStatus('Sync not set up · configure the URL in Admin');
+        return;
+      }
 
       try {
         if (forcePull) {
+          updateSyncStatus('Checking Google Sheets…');
           const data = await pullFromGoogleSheet(url);
           if (data === null) {
-            await fetch(url, {
-              method: 'POST',
-              mode: 'no-cors',
-              headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-              body: JSON.stringify(appData)
-            });
-            showToast('Cloud sheet was empty. Sent this device’s data to start syncing. ☁️', '☁️');
+            await sendDataToGoogleSheet(url);
+            showToast('Google Sheet was empty. Sent this device’s data to initialize it.', '☁️');
             return;
           }
 
@@ -2192,21 +2235,37 @@
             throw new Error('Sync endpoint returned invalid app data');
           }
 
+          const localSnapshot = JSON.stringify(appData);
+          const remoteSnapshot = JSON.stringify(data);
+          if (localSnapshot === remoteSnapshot) {
+            const time = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            updateSyncStatus(`Up to date with Google Sheets · checked ${time}`);
+            showToast('This device is up to date with Google Sheets.', '☁️');
+            return;
+          }
+
+          const useRemoteData = window.confirm(
+            'The Google Sheet and this device have different data. Choose OK to replace this device’s data with the Sheet, or Cancel to keep this device’s data and send it to the Sheet.'
+          );
+          if (!useRemoteData) {
+            await sendDataToGoogleSheet(url);
+            showToast('Kept this device’s data. Upload sent; Google Sheets cannot confirm receipt.', '☁️');
+            return;
+          }
+
           localStorage.setItem('parent_points_data_v3', JSON.stringify(data));
           appData = data;
-          renderPointsBoard();
+          renderSyncedData();
+          const time = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+          updateSyncStatus(`Loaded from Google Sheets · ${time}`);
           showToast('Synced fresh data from Google Sheet! ☁️', '☁️');
           return;
         }
 
-        await fetch(url, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-          body: JSON.stringify(appData)
-        });
+        await sendDataToGoogleSheet(url);
       } catch (error) {
         console.error('Google Sheets sync failed:', error);
+        updateSyncStatus('Sync failed · your changes are still saved on this device');
         showToast(
           forcePull
             ? 'Cloud sync failed. Check the URL and Apps Script deployment.'
@@ -2223,6 +2282,7 @@
       document.addEventListener('pointercancel', cancelListReorder);
       loadData();
       renderPointsBoard();
+      syncWithGoogleSheet(true);
     });
   </script>
 </body>
