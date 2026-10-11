@@ -341,65 +341,63 @@
           <div id="adminKidsList" class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <!-- Dynamically populated child edit cards -->
           </div>
-          <div class="mt-4 p-4 rounded-2xl bg-indigo-50 border border-indigo-100">
-            <h4 class="text-sm font-bold font-heading text-indigo-950 mb-3">Add a Child</h4>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-              <div class="sm:col-span-2 lg:col-span-1">
-                <label for="adminNewKidName" class="block text-[11px] font-bold text-slate-600 mb-1">Name</label>
-                <input type="text" id="adminNewKidName" maxlength="40" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+          <details class="mt-4 rounded-2xl bg-indigo-50 border border-indigo-100">
+            <summary class="cursor-pointer px-4 py-3 text-sm font-bold font-heading text-indigo-950">Add a Child</summary>
+            <div class="px-4 pb-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                <div class="sm:col-span-2 lg:col-span-1">
+                  <label for="adminNewKidName" class="block text-[11px] font-bold text-slate-600 mb-1">Name</label>
+                  <input type="text" id="adminNewKidName" maxlength="40" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                </div>
+                <div>
+                  <label for="adminNewKidDob" class="block text-[11px] font-bold text-slate-600 mb-1">Birthday (Optional)</label>
+                  <input type="date" id="adminNewKidDob" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                </div>
+                <div>
+                  <label for="adminNewKidGoal" class="block text-[11px] font-bold text-slate-600 mb-1">Goal (Points)</label>
+                  <input type="number" id="adminNewKidGoal" min="1" step="1" value="20" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                </div>
+                <div>
+                  <label for="adminNewKidAvatar" class="block text-[11px] font-bold text-slate-600 mb-1">Avatar</label>
+                  <select id="adminNewKidAvatar" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-lg bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"></select>
+                </div>
+                <div>
+                  <label for="adminNewKidColor" class="block text-[11px] font-bold text-slate-600 mb-1">Color</label>
+                  <select id="adminNewKidColor" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"></select>
+                </div>
               </div>
-              <div>
-                <label for="adminNewKidDob" class="block text-[11px] font-bold text-slate-600 mb-1">Birthday (Optional)</label>
-                <input type="date" id="adminNewKidDob" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
-              </div>
-              <div>
-                <label for="adminNewKidGoal" class="block text-[11px] font-bold text-slate-600 mb-1">Goal (Points)</label>
-                <input type="number" id="adminNewKidGoal" min="1" step="1" value="20" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
-              </div>
-              <div>
-                <label for="adminNewKidAvatar" class="block text-[11px] font-bold text-slate-600 mb-1">Avatar</label>
-                <select id="adminNewKidAvatar" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-lg bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"></select>
-              </div>
-              <div>
-                <label for="adminNewKidColor" class="block text-[11px] font-bold text-slate-600 mb-1">Color</label>
-                <select id="adminNewKidColor" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"></select>
-              </div>
+              <button type="button" onclick="addKidToRoster()" class="mt-3 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl tap-scale">+ Add Child</button>
             </div>
-            <button type="button" onclick="addKidToRoster()" class="mt-3 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl tap-scale">+ Add Child</button>
-          </div>
+          </details>
         </div>
 
         <!-- Chores Management -->
-        <div class="mt-8 pt-8 border-t border-slate-100">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-base font-bold font-heading text-indigo-950 flex items-center gap-2">
-              <span>🧹</span> Household Chores & Habits
-            </h3>
-            <button onclick="openAddChoreModal()" class="px-3.5 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-xl tap-scale hover:bg-indigo-700">
+        <details class="mt-8 pt-6 border-t border-slate-100">
+          <summary class="cursor-pointer text-base font-bold font-heading text-indigo-950">🧹 Household Chores & Habits</summary>
+          <div class="pt-4">
+            <button onclick="openAddChoreModal()" class="mb-3 px-3.5 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-xl tap-scale hover:bg-indigo-700">
               + New Chore
             </button>
+            <p class="text-xs text-slate-500 font-medium mb-3">Drag the handle to change the order chores appear in the chore list.</p>
+            <div id="adminChoresList" class="space-y-2">
+              <!-- Chores listing -->
+            </div>
           </div>
-          <p class="text-xs text-slate-500 font-medium mb-3">Drag the handle to change the order chores appear in the chore list.</p>
-          <div id="adminChoresList" class="space-y-2">
-            <!-- Chores listing -->
-          </div>
-        </div>
+        </details>
 
         <!-- Rewards Management -->
-        <div class="mt-8 pt-8 border-t border-slate-100">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-base font-bold font-heading text-indigo-950 flex items-center gap-2">
-              <span>🎁</span> Reward Store Items
-            </h3>
-            <button onclick="openAddRewardModal()" class="px-3.5 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-xl tap-scale hover:bg-indigo-700">
+        <details class="mt-8 pt-6 border-t border-slate-100">
+          <summary class="cursor-pointer text-base font-bold font-heading text-indigo-950">🎁 Reward Store Items</summary>
+          <div class="pt-4">
+            <button onclick="openAddRewardModal()" class="mb-3 px-3.5 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-xl tap-scale hover:bg-indigo-700">
               + New Reward
             </button>
+            <p class="text-xs text-slate-500 font-medium mb-3">Drag the handle to change reward order. Rewards remain grouped by point tier in the shop.</p>
+            <div id="adminRewardsList" class="space-y-2">
+              <!-- Rewards listing -->
+            </div>
           </div>
-          <p class="text-xs text-slate-500 font-medium mb-3">Drag the handle to change reward order. Rewards remain grouped by point tier in the shop.</p>
-          <div id="adminRewardsList" class="space-y-2">
-            <!-- Rewards listing -->
-          </div>
-        </div>
+        </details>
 
         <!-- Start Fresh -->
         <div class="mt-8 pt-8 border-t border-slate-100">
