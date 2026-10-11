@@ -443,16 +443,8 @@
       <div class="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 text-3xl flex items-center justify-center mb-4">🌟</div>
       <h2 class="text-2xl font-bold font-heading text-slate-800 mb-2">Set up your family tracker</h2>
       <p class="text-sm text-slate-600 mb-5">Choose how this family will save its points and activity. You can change sync settings later in Admin.</p>
+      <p class="text-xs font-bold text-indigo-900 bg-indigo-50 border border-indigo-100 rounded-xl p-3 mb-4">Initial Parent PIN: <code>1234</code>. Change it in Admin after setup.</p>
       <div class="space-y-3">
-        <button type="button" onclick="beginGoogleSheetSetup()" class="w-full p-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-left text-white tap-scale">
-          <span class="block font-bold">🔐 Create a Google Sheet</span>
-          <span class="block mt-1 text-xs text-indigo-100">Sign in to create a private family Sheet and sync this setup.</span>
-        </button>
-        <details id="setupGoogleConfigNotice" class="text-[11px] text-slate-600 -mt-1 rounded-xl bg-amber-50 border border-amber-200 p-3">
-          <summary class="cursor-pointer font-bold text-amber-900">Why can't I sign in yet?</summary>
-          <p class="mt-2">This is a one-time setup for the app owner, not something every family needs to do. The owner must enable Google Sheets and Drive APIs in Google Cloud, create a Web application OAuth client ID, authorize <code>https://deytrfrancisco.github.io</code>, put that client ID in <code>GOOGLE_OAUTH_CLIENT_ID</code> in <a href="https://github.com/deytrfrancisco/parent-points/blob/main/index.html" target="_blank" rel="noopener" class="underline font-bold">index.html</a>, and publish the update.</p>
-          <p class="mt-2">After that, families can choose this option, sign in to Google, and approve access; the app creates their Sheet. They do not configure Google Cloud or deploy a script. <a href="https://github.com/deytrfrancisco/parent-points#direct-google-sign-in-setup-app-maintainer" target="_blank" rel="noopener" class="underline font-bold">See the full owner setup instructions</a>.</p>
-        </details>
         <button type="button" onclick="showSetupAppsScriptLink()" class="w-full p-4 rounded-2xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-left text-emerald-950 tap-scale">
           <span class="block font-bold">🔗 I have a family sync link</span>
           <span class="block mt-1 text-xs text-emerald-800">Paste the Apps Script web app URL shared by your family.</span>
@@ -462,7 +454,20 @@
           <input type="url" id="setupSyncUrlInput" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
           <button type="button" onclick="connectSetupSyncUrl()" class="mt-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl tap-scale">Connect family sync</button>
         </div>
-        <button type="button" onclick="continueWithoutSync()" class="w-full p-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold tap-scale">Use on this device only</button>
+        <button type="button" onclick="continueWithoutSync()" class="w-full p-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-left text-white shadow-md ring-2 ring-indigo-200 tap-scale">
+          <span class="block font-bold">🌟 Use on this device only <span class="ml-1 text-xs font-semibold text-indigo-100">(Recommended to get started)</span></span>
+          <span class="block mt-1 text-xs text-indigo-100">Start now. Your data stays in this browser; you can connect a family Sheet later in Admin.</span>
+        </button>
+        <div class="pt-2 border-t border-slate-100">
+          <div class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 text-left text-slate-500">
+            <span class="block font-bold">🔐 Create a Google Sheet <span class="ml-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Coming soon</span></span>
+            <span class="block mt-1 text-xs">Direct Google sign-in and automatic Sheet creation are not available yet.</span>
+          </div>
+          <details id="setupGoogleConfigNotice" class="mt-2 text-[11px] text-slate-500 rounded-xl bg-slate-50 border border-slate-200 p-3">
+            <summary class="cursor-pointer font-bold">Is direct Google sign-in available?</summary>
+            <p class="mt-2">Not yet. For now, choose <strong>Use on this device only</strong>, or connect a family's Apps Script URL above. You can set up Sheets sync later in Admin. See the <a href="https://github.com/deytrfrancisco/parent-points#10-direct-google-sign-in-not-implemented" target="_blank" rel="noopener" class="underline font-bold">README setup guide</a>.</p>
+          </details>
+        </div>
       </div>
       <p class="text-[11px] text-slate-400 mt-4">A Google Sheet is accessible to anyone you share it with. The app's Parent PIN does not restrict access to synced data.</p>
     </div>
