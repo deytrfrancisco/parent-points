@@ -9,12 +9,12 @@ A small, installable family points app for tracking chores, points, and rewards.
 - [3. Add the app to a phone's Home Screen](#3-add-the-app-to-a-phones-home-screen)
   - [3.1 iPhone or iPad (Safari)](#31-iphone-or-ipad-safari)
   - [3.2 Android (Chrome)](#32-android-chrome)
-- [4. Legacy Apps Script sync setup](#4-legacy-apps-script-sync-setup)
-  - [4.1 Security and privacy warning](#41-security-and-privacy-warning)
-  - [4.2 Create the spreadsheet](#42-create-the-spreadsheet)
-  - [4.3 Create and configure the Apps Script](#43-create-and-configure-the-apps-script)
-  - [4.4 Deploy the script as a web app](#44-deploy-the-script-as-a-web-app)
-  - [4.5 Connect the app](#45-connect-the-app)
+- [4. Google Sheets sync setup (Apps Script)](#4-google-sheets-sync-setup-apps-script)
+  - [4.1 Create the spreadsheet](#41-create-the-spreadsheet)
+  - [4.2 Create and configure the Apps Script](#42-create-and-configure-the-apps-script)
+  - [4.3 Deploy the script as a web app](#43-deploy-the-script-as-a-web-app)
+  - [4.4 Connect the app](#44-connect-the-app)
+  - [4.5 Security and privacy warning](#45-security-and-privacy-warning)
 - [5. What the app does](#5-what-the-app-does)
   - [5.1 Admin and reset options](#51-admin-and-reset-options)
 - [6. First-run setup and starter data](#6-first-run-setup-and-starter-data)
@@ -64,24 +64,18 @@ Direct Google sign-in is not implemented yet, so do not select that option expec
 
 If the install option is not shown, first open the app link in the platform browser above and let the page finish loading. Browser and operating-system versions can change the menu wording or availability.
 
-## 4. Legacy Apps Script sync setup
+## 4. Google Sheets sync setup (Apps Script)
 
-This remains available for families who already have a deployed endpoint or want to connect another device using a shared endpoint. Each family should create and control its **own spreadsheet and Apps Script deployment**. Do not paste another family's endpoint into your app, use a shared test spreadsheet for real family data, or publish the deployed endpoint in a public repository, chat, or website.
+Set up a spreadsheet and an Apps Script web app for each family. This is the currently supported way to sync a family's data across devices. Each family should create and control its **own spreadsheet and Apps Script deployment**.
 
-### 4.1 Security and privacy warning
-
-The legacy Apps Script endpoint has **no user authentication or per-family authorization**. Anyone who obtains its web app URL may be able to read or overwrite the data in the spreadsheet it is configured to use. The app's Parent PIN does not protect the endpoint; the PIN itself is included in the synced data. Google Apps Script deployment access settings may make the endpoint accessible to anyone, depending on the option selected.
-
-Use this legacy sync flow only for a small, trusted test with non-sensitive data, and share the endpoint privately only with the person who needs to connect another device to that family's data. Do not store information you would not want exposed to someone who gets the URL. This is not suitable for public multi-family production use; that needs authenticated access and stronger server-side authorization.
-
-### 4.2 Create the spreadsheet
+### 4.1 Create the spreadsheet
 
 1. Sign in to the Google account that will own the family's data.
 2. Create a new Google spreadsheet, for example **Parent Points - Test Family**. Keep it restricted to the people you intend to share it with.
 3. Copy the spreadsheet ID from its URL. For a URL of the form `https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit`, copy only the `SPREADSHEET_ID` part.
 4. Keep this spreadsheet separate from any other family's sheet. The script will create a tab named `AppData` the first time it is used.
 
-### 4.3 Create and configure the Apps Script
+### 4.2 Create and configure the Apps Script
 
 1. In the spreadsheet, choose **Extensions → Apps Script**.
 2. In the Apps Script editor, open `Code.gs`, remove its contents, and paste the complete script below (also available in [`google-apps-script.js`](./google-apps-script.js)).
@@ -196,7 +190,7 @@ function doPost(e) {
 }
 ```
 
-### 4.4 Deploy the script as a web app
+### 4.3 Deploy the script as a web app
 
 1. In Apps Script, select **Deploy → New deployment**.
 2. Choose the gear icon / deployment type selector, then choose **Web app**.
@@ -205,7 +199,7 @@ function doPost(e) {
 5. Select **Deploy** and authorize the requested Google Sheets access when prompted.
 6. Copy the **Web app URL** ending in `/exec`. Keep it private. If you change the script later, create a new version and update the deployment so the live endpoint runs the latest code.
 
-### 4.5 Connect the app
+### 4.4 Connect the app
 
 1. Open the published app over HTTPS: <https://deytrfrancisco.github.io/parent-points/>.
 2. Go to **Admin** and enter the Parent PIN.
@@ -214,6 +208,12 @@ function doPost(e) {
 5. To connect a second device to the same family, open the app on that device and connect it to the **same family's** endpoint. If the app detects different local and Sheet data, read the prompt carefully: choose to load the Sheet when the Sheet is the source of truth, or keep the local data and upload it only when that is intended.
 
 The app saves its endpoint and current Sheet revision in that browser's local storage. Each device/browser must be connected separately. If a sync conflict occurs, the app keeps local changes and asks you to resolve the mismatch; use **Sync now** and review the prompt rather than assuming either copy was merged.
+
+### 4.5 Security and privacy warning
+
+The Apps Script endpoint has **no user authentication or per-family authorization**. Anyone who obtains its web app URL may be able to read or overwrite the data in the spreadsheet it is configured to use. The app's Parent PIN does not protect the endpoint; the PIN itself is included in the synced data. Google Apps Script deployment access settings may make the endpoint accessible to anyone, depending on the option selected.
+
+Treat the `/exec` URL as private and share it only with trusted family members who should access that family's data. Do not post it publicly, use another family's endpoint, or send the URL to the app developer. Do not store information you would not want exposed to someone who gets the URL. This setup is intended for trusted family use, not public multi-family production; that requires authenticated access and stronger server-side authorization.
 
 ## 5. What the app does
 
