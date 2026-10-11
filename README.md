@@ -18,6 +18,7 @@ The PWA caches the app shell for offline use after it has loaded successfully on
 - Awards preset points and supports parent adjustments, including deductions and notes.
 - Tracks chores, eligible children, daily completions, and chore activity.
 - Provides a reward shop and a queue for reward requests awaiting fulfillment.
+- Lets a child cancel a pending reward request to return its points, and shows how many days each request has been waiting.
 - Lets a parent manage the family banner, PIN, child roster, chores, and rewards in Admin.
 - Supports multiple children. A parent can add a child with a name, optional birthday, point goal, avatar, and color; edit a name or birthday; and remove a child with confirmation.
 - Offers a first-run choice to use local storage, connect a family's Apps Script URL, or create/connect a Google Sheet using Google sign-in.
@@ -27,14 +28,15 @@ The PWA caches the app shell for offline use after it has loaded successfully on
 
 Open **Admin** and enter the Parent PIN. The initial PIN is `1234`; change it in Admin.
 
-- **Reset Points & Activity** resets point balances and histories, chore records, and pending reward requests. It keeps the roster, chores, rewards, banner, and settings.
+- **Reset Points & Activity** resets point balances and histories and clears chore records. It keeps the roster, chores, rewards, banner, settings, and pending reward requests.
 - **Full Reset** restores the starter app data and default PIN while keeping the locally configured sync URL. If sync is configured, the reset is also sent to the connected Sheet after a revision check.
 
 The PIN is a convenience gate in the app, not a security boundary for data stored in the browser or Google Sheet.
+Daily chore completions are tracked by date; pending reward requests are not part of that daily reset and remain queued until a parent fulfills them or the request is canceled. The **Reset Points & Activity** option also preserves pending reward requests. Canceling a request refunds its point cost and records the cancellation in the child's activity history. Requests created before requested dates were recorded show that their age is unavailable.
 
 ## First-run setup and starter data
 
-On a first visit with no saved app data, the app offers three choices: create/connect a Google Sheet, paste a family's existing Apps Script sync URL, or use the app on this device only. The starter data is neutral sample data (one profile named **Child 1**, generic chores and rewards). Add or rename profiles in Admin. Full Reset returns to this neutral starter setup. Existing saved family data is not automatically changed by app updates.
+On a first visit with no saved app data, the app offers three choices: create/connect a Google Sheet, paste a family's existing Apps Script sync URL, or use the app on this device only. The starter data has one neutral profile named **Child 1** and uses the chore and reward catalog provided for the original family as example options. Chores are initially assigned to Child 1. Change or remove any options and add or rename profiles in Admin. Full Reset restores these starter options and the default PIN, not any family's saved data. Existing saved family data is not automatically changed by app updates.
 
 The app does not yet support choosing an existing shared Sheet through Google Picker. The direct Google sign-in flow can find Sheets created by this app in the same Google account, which is useful when reconnecting another device signed into that same account. To join a different family member's sheet with the direct API flow, Picker-based shared-sheet selection still needs to be implemented. In the meantime, a family can use its Apps Script URL option.
 

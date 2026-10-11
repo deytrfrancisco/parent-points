@@ -405,7 +405,7 @@
           <h3 class="text-base font-bold font-heading text-rose-900 mb-2 flex items-center gap-2">
             <span>🧹</span> Start Fresh
           </h3>
-          <p class="text-xs text-slate-500 font-medium mb-3">Reset all children's points and activity, chore records, and pending reward requests. Profiles, chores, rewards, and settings will be kept. Full Reset restores the starter family setup but keeps the Google Sheets connection.</p>
+          <p class="text-xs text-slate-500 font-medium mb-3">Reset all children's points and activity and clear chore records. Profiles, chores, rewards, settings, and pending reward requests will be kept. Full Reset restores the starter family setup but keeps the Google Sheets connection.</p>
           <div class="flex flex-wrap gap-2">
             <button onclick="requireParentPin(resetFamilyActivity)" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl tap-scale">
               Reset Points & Activity
@@ -740,17 +740,35 @@
           history: []
         }
       ],
-      featuredChoreId: 'c-tidy',
+      featuredChoreId: 'c-1791724718324',
       chores: [
-        { id: 'c-tidy', title: 'Tidy Up', emoji: '🧹', points: 2, applicableKids: ['kid-1'] },
-        { id: 'c-teeth', title: 'Brush Teeth', emoji: '🪥', points: 1, applicableKids: ['kid-1'] },
-        { id: 'c-help', title: 'Help Around the House', emoji: '✨', points: 2, applicableKids: ['kid-1'] }
+        { id: 'c-piano', title: 'Piano Practice (20 mins)', emoji: '🎹', points: 1, applicableKids: ['kid-1'] },
+        { id: 'c-vacuum', title: 'Vacuum Family Room', emoji: '🧹', points: 2, applicableKids: ['kid-1'] },
+        { id: 'c-dishes', title: 'Empty Kid Dishes & Silverware', emoji: '🍽️', points: 2, applicableKids: ['kid-1'] },
+        { id: 'c-nami', title: 'Feed & water dog 🐕', emoji: '🦴', points: 1, applicableKids: ['kid-1'] },
+        { id: 'c-teeth', title: 'Brush Teeth Morning & Night', emoji: '🪥', points: 1, applicableKids: ['kid-1'] },
+        { id: 'c-toys', title: 'Clean Playroom', emoji: '🧸', points: 5, applicableKids: ['kid-1'] },
+        { id: 'c-hamper', title: 'Put Clothes in Hamper', emoji: '🧺', points: 1, applicableKids: ['kid-1'] },
+        { id: 'c-1791724718324', title: 'Clean bedroom', emoji: '🛏️', points: 3, applicableKids: ['kid-1'] },
+        { id: 'c-1791724761007', title: 'Take trash out', emoji: '🗑️', points: 1, applicableKids: ['kid-1'] },
+        { id: 'c-1791724886834', title: 'Pick up pool area', emoji: '🏊', points: 3, applicableKids: ['kid-1'] },
+        { id: 'c-1791733179928', title: 'Pick up toys', emoji: '🪆', points: 2, applicableKids: ['kid-1'] },
+        { id: 'c-1791733438536', title: 'Put Away Clothes', emoji: '🧺', points: 2, applicableKids: ['kid-1'] },
+        { id: 'c-1791733578267', title: 'Practice ABCs & 123s', emoji: '🔤', points: 2, applicableKids: ['kid-1'] },
+        { id: 'c-1791733614018', title: 'Homework', emoji: '📚', points: 2, applicableKids: ['kid-1'] }
       ],
       rewards: [
-        { id: 'r-treat', title: 'Choose a Treat', emoji: '🍦', cost: 5 },
-        { id: 'r-story', title: 'Extra Bedtime Story', emoji: '📖', cost: 8 },
-        { id: 'r-game', title: 'Extra Screen or Game Time', emoji: '🎮', cost: 15 },
-        { id: 'r-outing', title: 'Choose a Family Outing', emoji: '🏞️', cost: 20 }
+        { id: 'r-1791726136586', title: 'Glow in the dark bath party!', emoji: '🌌', cost: 2 },
+        { id: 'r-treat', title: 'Pick Dinner tonight', emoji: '🍝', cost: 5 },
+        { id: 'r-1791724954449', title: 'Extra bedtime snack', emoji: '🍪', cost: 5 },
+        { id: 'r-story', title: 'Extra Bedtime Story + Snuggle', emoji: '📖', cost: 8 },
+        { id: 'r-1791725343265', title: 'Stay up late (30 min)', emoji: '🦉', cost: 12 },
+        { id: 'r-game30', title: '30 Mins Extra Screen / Game', emoji: '🎮', cost: 15 },
+        { id: 'r-park', title: 'Pick the Weekend Park Outing', emoji: '🏞️', cost: 20 },
+        { id: 'r-1791725412220', title: 'Stay up extra late (60 min)', emoji: '🌚', cost: 20 },
+        { id: 'r-movie', title: 'Family Movie/ Game Night Choice & Popcorn', emoji: '🍿', cost: 25 },
+        { id: 'r-1791726726187', title: 'Date night with Mom or Dad', emoji: '💖', cost: 35 },
+        { id: 'r-lego', title: 'New stuffed animal / Big Toy Wish', emoji: '🧸', cost: 45 }
       ],
       pendingRewards: [],
       choreCompletions: {},
@@ -1664,17 +1682,23 @@
         `;
       } else {
         pendingList.innerHTML = list.map(item => `
-          <div class="bg-white p-3.5 rounded-2xl border border-amber-200 flex items-center justify-between gap-3 shadow-2xs">
-            <div class="flex items-center gap-3">
+          <div class="bg-white p-3.5 rounded-2xl border border-amber-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-2xs">
+            <div class="flex items-center gap-3 min-w-0">
               <span class="text-3xl">${escapeHtml(item.emoji || '🎁')}</span>
               <div>
                 <h4 class="font-bold font-heading text-slate-800 text-sm leading-tight">${escapeHtml(item.rewardTitle)}</h4>
                 <p class="text-xs text-amber-800 font-bold">Purchased by ${escapeHtml(item.kidName)} (${escapeHtml(item.cost)} pts)</p>
+                <p class="text-xs text-slate-500 mt-1">${escapeHtml(getPendingRewardAgeLabel(item.requestedDate))}</p>
               </div>
             </div>
-            <button onclick="requireParentPin(() => fulfillPendingReward(${htmlArg(item.id)}))" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-xs tap-scale shrink-0">
-              Fulfill Reward 🎁
-            </button>
+            <div class="flex gap-2 shrink-0 justify-end">
+              <button onclick="cancelPendingReward(${htmlArg(item.id)})" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs tap-scale">
+                Cancel request
+              </button>
+              <button onclick="requireParentPin(() => fulfillPendingReward(${htmlArg(item.id)}))" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-xs tap-scale">
+                Fulfill Reward 🎁
+              </button>
+            </div>
           </div>
         `).join('');
       }
@@ -1767,6 +1791,19 @@
       });
     }
 
+    function getPendingRewardAgeLabel(requestedDate) {
+      if (typeof requestedDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(requestedDate)) {
+        return 'Requested date unavailable';
+      }
+      const [year, month, day] = requestedDate.split('-').map(Number);
+      const requestedDay = Date.UTC(year, month - 1, day);
+      const today = getTodayKey().split('-').map(Number);
+      const currentDay = Date.UTC(today[0], today[1] - 1, today[2]);
+      const daysAgo = Math.max(0, Math.floor((currentDay - requestedDay) / 86400000));
+      if (daysAgo === 0) return 'Requested today';
+      return `Requested ${daysAgo} day${daysAgo === 1 ? '' : 's'} ago`;
+    }
+
     function setRewardAsGoal(costPoints, rewardTitle) {
       const shopper = appData.kids.find(k => k.id === activeShopperId);
       if (!shopper) return;
@@ -1813,7 +1850,8 @@
             rewardTitle: reward.title,
             emoji: reward.emoji || '🎁',
             cost: reward.cost,
-            date: 'Today'
+            date: 'Today',
+            requestedDate: getTodayKey()
           });
 
           saveData();
@@ -1841,6 +1879,34 @@
         playChime('tap');
         showToast(`Delivered & fulfilled: ${item.rewardTitle} for ${item.kidName}! 🎉`, '✅');
       }
+    }
+
+    function cancelPendingReward(pendingId) {
+      const index = (appData.pendingRewards || []).findIndex(item => item.id === pendingId);
+      if (index === -1) return;
+      const item = appData.pendingRewards[index];
+      const kid = appData.kids.find(profile => profile.id === item.kidId);
+      if (!kid) {
+        showToast('Could not find the child for this reward request.', '⚠️');
+        return;
+      }
+      if (!window.confirm(`Cancel ${item.rewardTitle} for ${kid.name} and refund ${item.cost} points?`)) return;
+
+      kid.points += Number(item.cost);
+      if (!kid.history) kid.history = [];
+      kid.history.unshift({
+        id: 'act-' + Date.now(),
+        text: `Canceled reward request: ${item.rewardTitle}`,
+        note: 'Reward request canceled; points refunded',
+        pts: `+${item.cost}`,
+        date: 'Just now'
+      });
+      appData.pendingRewards.splice(index, 1);
+      saveData();
+      renderShopView();
+      renderPointsBoard();
+      playChime('tap');
+      showToast(`Request canceled. ${item.cost} points returned to ${kid.name}.`, '↩️');
     }
 
     function renderAdminView() {
@@ -2084,7 +2150,7 @@
 
     function resetFamilyActivity() {
       const confirmed = window.confirm(
-        'Start fresh for everyone? This will reset all point balances, clear activity histories and chore records, and remove pending reward requests. Profiles, chores, rewards, and settings will be kept.'
+        'Start fresh for everyone? This will reset all point balances and clear activity histories and chore records. Pending reward requests, profiles, chores, rewards, and settings will be kept.'
       );
       if (!confirmed) return;
 
@@ -2094,8 +2160,6 @@
       });
       appData.choreCompletions = {};
       appData.choreLog = {};
-      appData.pendingRewards = [];
-
       saveData();
       renderPointsBoard();
       renderChoresView();
