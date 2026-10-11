@@ -11,6 +11,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Parent Points">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
   <link rel="manifest" href="./manifest.webmanifest">
 
   <!-- Google Fonts: Fredoka & Quicksand -->
@@ -50,6 +51,21 @@
       transform: scale(0.96);
       filter: brightness(0.95);
     }
+    .reorder-handle {
+      touch-action: none;
+      cursor: grab;
+    }
+    .reorder-handle:active {
+      cursor: grabbing;
+    }
+    [data-reorder-item].reorder-dragging {
+      opacity: 0.45;
+    }
+    @media (max-width: 379px) {
+      .app-brand-subtitle {
+        display: none;
+      }
+    }
   </style>
 </head>
 <body class="bg-slate-100 min-h-screen text-slate-800 pb-20 selection:bg-indigo-100">
@@ -60,22 +76,22 @@
         <span class="text-3xl">⭐</span>
         <div>
           <h1 class="text-xl sm:text-2xl font-bold font-heading text-indigo-950 tracking-tight leading-none">Parent Points</h1>
-          <p class="text-[11px] font-semibold text-slate-400 mt-0.5">Atlas • Renn • Elio</p>
+          <p class="app-brand-subtitle text-[11px] font-semibold text-slate-400 mt-0.5">Atlas • Renn • Elio</p>
         </div>
       </div>
 
       <div class="flex items-center gap-1 sm:gap-2">
-        <button onclick="switchTab('board')" id="nav-board" class="nav-btn px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all bg-indigo-600 text-white shadow-sm tap-scale">
-          🌟 Points
+        <button onclick="switchTab('board')" id="nav-board" aria-label="Points" title="Points" class="nav-btn px-2 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all bg-indigo-600 text-white shadow-sm tap-scale">
+          🌟 <span class="hidden sm:inline">Points</span>
         </button>
-        <button onclick="switchTab('chores')" id="nav-chores" class="nav-btn px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all text-slate-600 hover:bg-slate-100 tap-scale">
-          ⚡ Earn Points
+        <button onclick="switchTab('chores')" id="nav-chores" aria-label="Earn Points" title="Earn Points" class="nav-btn px-2 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all text-slate-600 hover:bg-slate-100 tap-scale">
+          ⚡ <span class="hidden sm:inline">Earn Points</span>
         </button>
-        <button onclick="switchTab('shop')" id="nav-shop" class="nav-btn px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all text-slate-600 hover:bg-slate-100 tap-scale">
-          🎁 Rewards
+        <button onclick="switchTab('shop')" id="nav-shop" aria-label="Rewards" title="Rewards" class="nav-btn px-2 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all text-slate-600 hover:bg-slate-100 tap-scale">
+          🎁 <span class="hidden sm:inline">Rewards</span>
         </button>
-        <button onclick="requireParentPin(openParentAdminDirect)" id="nav-admin" class="nav-btn px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all text-slate-600 hover:bg-slate-100 tap-scale">
-          ⚙️ Admin
+        <button onclick="requireParentPin(openParentAdminDirect)" id="nav-admin" aria-label="Admin" title="Admin" class="nav-btn px-2 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all text-slate-600 hover:bg-slate-100 tap-scale">
+          ⚙️ <span class="hidden sm:inline">Admin</span>
         </button>
       </div>
     </div>
@@ -157,7 +173,7 @@
           <h3 class="text-lg font-bold font-heading text-slate-800">Who is claiming chores right now?</h3>
           <p class="text-xs text-slate-500 font-medium">Select your card below to mark tasks complete or undo mistakes.</p>
         </div>
-        <div id="choreEarnerSelector" class="flex gap-2">
+        <div id="choreEarnerSelector" class="flex flex-wrap gap-2">
           <!-- Injected boys selector buttons -->
         </div>
       </div>
@@ -326,6 +342,7 @@
               + New Chore
             </button>
           </div>
+          <p class="text-xs text-slate-500 font-medium mb-3">Drag the handle to change the order chores appear in the chore list.</p>
           <div id="adminChoresList" class="space-y-2">
             <!-- Chores listing -->
           </div>
@@ -341,6 +358,7 @@
               + New Reward
             </button>
           </div>
+          <p class="text-xs text-slate-500 font-medium mb-3">Drag the handle to change reward order. Rewards remain grouped by point tier in the shop.</p>
           <div id="adminRewardsList" class="space-y-2">
             <!-- Rewards listing -->
           </div>
@@ -363,8 +381,8 @@
             <span>☁️</span> Google Drive / Google Sheets Cloud Sync
           </h3>
           <p class="text-xs text-slate-500 font-medium mb-3">Paste your Google Apps Script Web App URL ending in <code>/exec</code> to sync points automatically between your phone and tablet.</p>
-          <div class="flex gap-2 max-w-xl">
-            <input type="url" id="adminSyncUrlInput" placeholder="https://script.google.com/macros/s/.../exec" class="flex-1 px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+          <div class="flex flex-col sm:flex-row gap-2 max-w-xl">
+            <input type="url" id="adminSyncUrlInput" placeholder="https://script.google.com/macros/s/.../exec" class="min-w-0 w-full flex-1 px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
             <button onclick="saveSyncEndpoint()" class="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl tap-scale hover:bg-emerald-700 shrink-0">Connect & Sync</button>
           </div>
         </div>
@@ -511,7 +529,7 @@
 
         <div>
           <label class="block text-xs font-bold text-slate-600 mb-1.5">Who does this chore apply to?</label>
-          <div class="flex gap-4 p-3 bg-slate-50 rounded-2xl border border-slate-200/80">
+          <div class="flex flex-wrap gap-x-4 gap-y-2 p-3 bg-slate-50 rounded-2xl border border-slate-200/80">
             <label class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
               <input type="checkbox" id="choreCheckAtlas" class="rounded-sm text-indigo-600 focus:ring-indigo-500"> Atlas
             </label>
@@ -532,7 +550,7 @@
   <div id="rewardEditModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 relative">
       <button onclick="closeRewardEditModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-sm tap-scale flex items-center justify-center">✕</button>
-      <h3 class="text-xl font-bold font-heading text-slate-800 mb-4">New Reward Item</h3>
+      <h3 id="rewardEditModalTitle" class="text-xl font-bold font-heading text-slate-800 mb-4">New Reward Item</h3>
 
       <div class="space-y-3 mb-5">
         <div>
@@ -551,7 +569,7 @@
         </div>
       </div>
 
-      <button onclick="saveRewardEditModal()" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md tap-scale">Save Reward</button>
+      <button id="rewardEditSaveButton" onclick="saveRewardEditModal()" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md tap-scale">Save Reward</button>
     </div>
   </div>
 
@@ -641,7 +659,7 @@
         {
           id: 'kid-atlas',
           name: 'Atlas',
-          dob: '2019-03-15',
+          dob: '2019-07-17',
           points: 38,
           targetGoal: 50,
           color: 'blue',
@@ -654,7 +672,7 @@
         {
           id: 'kid-renn',
           name: 'Renn',
-          dob: '2022-06-10',
+          dob: '2022-05-11',
           points: 22,
           targetGoal: 30,
           color: 'orange',
@@ -667,7 +685,7 @@
         {
           id: 'kid-elio',
           name: 'Elio',
-          dob: '2024-07-20',
+          dob: '2024-04-05',
           points: 14,
           targetGoal: 20,
           color: 'green',
@@ -713,8 +731,10 @@
     let pointActionPending = null;
     let editingKidProfileId = null;
     let editingChoreId = null;
+    let editingRewardId = null;
     let isSummaryExpanded = true;
     let audioContext = null;
+    let activeReorder = null;
 
     function getTodayKey() {
       const now = new Date();
@@ -898,10 +918,10 @@
         const btn = document.getElementById(`nav-${v}`);
         if (v === tabId) {
           sec.classList.remove('hidden');
-          btn.className = "nav-btn px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all bg-indigo-600 text-white shadow-sm tap-scale";
+          btn.className = "nav-btn px-2 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all bg-indigo-600 text-white shadow-sm tap-scale";
         } else {
           sec.classList.add('hidden');
-          btn.className = "nav-btn px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all text-slate-600 hover:bg-slate-100 tap-scale";
+          btn.className = "nav-btn px-2 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all text-slate-600 hover:bg-slate-100 tap-scale";
         }
       });
 
@@ -1531,9 +1551,9 @@
       const shopper = appData.kids.find(k => k.id === activeShopperId) || appData.kids[0];
       const shopperTheme = THEME_COLORS[shopper.color] || THEME_COLORS.blue;
 
-      const t1 = (appData.rewards || []).filter(r => r.cost <= 10).sort((a,b) => a.cost - b.cost);
-      const t2 = (appData.rewards || []).filter(r => r.cost > 10 && r.cost <= 20).sort((a,b) => a.cost - b.cost);
-      const t3 = (appData.rewards || []).filter(r => r.cost > 20).sort((a,b) => a.cost - b.cost);
+      const t1 = (appData.rewards || []).filter(r => r.cost <= 10);
+      const t2 = (appData.rewards || []).filter(r => r.cost > 10 && r.cost <= 20);
+      const t3 = (appData.rewards || []).filter(r => r.cost > 20);
 
       renderRewardTier('rewardsTier1', t1, shopper, shopperTheme);
       renderRewardTier('rewardsTier2', t2, shopper, shopperTheme);
@@ -1703,6 +1723,7 @@
       choresList.innerHTML = '';
       appData.chores.forEach(chore => {
         const div = document.createElement('div');
+        div.dataset.reorderItem = chore.id;
         div.className = "p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs";
         const isFeatured = appData.featuredChoreId === chore.id;
         const ptsNum = parseInt(chore.points, 10);
@@ -1710,6 +1731,7 @@
         
         div.innerHTML = `
           <div class="flex items-center gap-3">
+            <button type="button" class="reorder-handle text-slate-400 hover:text-indigo-600 text-2xl leading-none px-1" aria-label="Drag to reorder chore" title="Drag to reorder">⠿</button>
             <span class="text-2xl shrink-0">${chore.emoji || '🧹'}</span>
             <div>
               <div class="flex items-center gap-2">
@@ -1720,7 +1742,7 @@
               </div>
 
               <!-- Quick Inline Kid Toggles -->
-              <div class="flex items-center gap-1.5 mt-1.5">
+              <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
                 <span class="text-[11px] font-bold text-slate-400 mr-1">Assigned:</span>
                 ${appData.kids.map(k => {
                   const isAssigned = (chore.applicableKids || []).includes(k.id);
@@ -1756,19 +1778,87 @@
       rewardsList.innerHTML = '';
       appData.rewards.forEach(reward => {
         const div = document.createElement('div');
+        div.dataset.reorderItem = reward.id;
         div.className = "p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3 text-xs";
         div.innerHTML = `
           <div class="flex items-center gap-2.5">
+            <button type="button" class="reorder-handle text-slate-400 hover:text-indigo-600 text-2xl leading-none px-1" aria-label="Drag to reorder reward" title="Drag to reorder">⠿</button>
             <span class="text-2xl">${reward.emoji || '🎁'}</span>
             <div>
               <span class="font-bold text-slate-800">${reward.title}</span>
               <span class="text-[11px] text-indigo-600 font-mono font-bold block">${reward.cost} pts</span>
             </div>
           </div>
-          <button onclick="deleteReward('${reward.id}')" class="w-7 h-7 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-600 font-bold tap-scale flex items-center justify-center">✕</button>
+          <div class="flex items-center gap-1.5">
+            <button onclick="openEditRewardModal('${reward.id}')" class="px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs tap-scale flex items-center gap-1">
+              ✏️ Edit
+            </button>
+            <button onclick="deleteReward('${reward.id}')" class="w-7 h-7 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-600 font-bold tap-scale flex items-center justify-center">✕</button>
+          </div>
         `;
         rewardsList.appendChild(div);
       });
+    }
+
+    function startListReorder(event) {
+      const handle = event.target.closest('.reorder-handle');
+      if (!handle || event.button !== 0) return;
+
+      const item = handle.closest('[data-reorder-item]');
+      const container = item && item.parentElement;
+      if (!item || !container || !['adminChoresList', 'adminRewardsList'].includes(container.id)) return;
+
+      event.preventDefault();
+      activeReorder = {
+        pointerId: event.pointerId,
+        item,
+        container,
+        moved: false
+      };
+      item.classList.add('reorder-dragging');
+      handle.setPointerCapture(event.pointerId);
+    }
+
+    function moveListReorder(event) {
+      if (!activeReorder || event.pointerId !== activeReorder.pointerId) return;
+
+      const target = document.elementFromPoint(event.clientX, event.clientY);
+      const targetItem = target && target.closest('[data-reorder-item]');
+      if (!targetItem || targetItem === activeReorder.item || targetItem.parentElement !== activeReorder.container) return;
+
+      const bounds = targetItem.getBoundingClientRect();
+      const insertBefore = event.clientY < bounds.top + bounds.height / 2;
+      activeReorder.container.insertBefore(
+        activeReorder.item,
+        insertBefore ? targetItem : targetItem.nextSibling
+      );
+      activeReorder.moved = true;
+    }
+
+    function finishListReorder(event) {
+      if (!activeReorder || event.pointerId !== activeReorder.pointerId) return;
+
+      const { container, moved } = activeReorder;
+      activeReorder.item.classList.remove('reorder-dragging');
+      activeReorder = null;
+      if (!moved) return;
+
+      const collectionName = container.id === 'adminChoresList' ? 'chores' : 'rewards';
+      const itemsById = new Map(appData[collectionName].map(item => [item.id, item]));
+      appData[collectionName] = Array.from(container.children, row => itemsById.get(row.dataset.reorderItem))
+        .filter(Boolean);
+
+      saveData();
+      renderAdminView();
+      if (collectionName === 'chores') renderChoresView();
+      else renderShopView();
+      showToast(`${collectionName === 'chores' ? 'Chore' : 'Reward'} order saved.`, '✅');
+    }
+
+    function cancelListReorder(event) {
+      if (!activeReorder || event.pointerId !== activeReorder.pointerId) return;
+      activeReorder = null;
+      renderAdminView();
     }
 
     function setManualAdjustPreset(val) {
@@ -1982,36 +2072,63 @@
     }
 
     function openAddRewardModal() {
+      editingRewardId = null;
+      document.getElementById('rewardEditModalTitle').textContent = 'New Reward Item';
+      document.getElementById('rewardEditSaveButton').textContent = 'Save Reward';
       document.getElementById('rewardInputTitle').value = '';
       document.getElementById('rewardInputEmoji').value = '🎁';
       document.getElementById('rewardInputCost').value = '10';
       document.getElementById('rewardEditModal').classList.remove('hidden');
     }
 
+    function openEditRewardModal(rewardId) {
+      const reward = appData.rewards.find(item => item.id === rewardId);
+      if (!reward) return;
+
+      editingRewardId = rewardId;
+      document.getElementById('rewardEditModalTitle').textContent = 'Edit Reward Item';
+      document.getElementById('rewardEditSaveButton').textContent = 'Save Changes';
+      document.getElementById('rewardInputTitle').value = reward.title || '';
+      document.getElementById('rewardInputEmoji').value = reward.emoji || '🎁';
+      document.getElementById('rewardInputCost').value = reward.cost;
+      document.getElementById('rewardEditModal').classList.remove('hidden');
+    }
+
     function closeRewardEditModal() {
       document.getElementById('rewardEditModal').classList.add('hidden');
+      editingRewardId = null;
     }
 
     function saveRewardEditModal() {
       const title = document.getElementById('rewardInputTitle').value.trim();
       const emoji = document.getElementById('rewardInputEmoji').value.trim() || '🎁';
       const cost = parseInt(document.getElementById('rewardInputCost').value, 10);
+      const isEditing = Boolean(editingRewardId);
       if (!title || isNaN(cost) || cost < 1) {
         showToast('Please enter valid reward title and cost.', '⚠️');
         return;
       }
 
-      appData.rewards.push({
-        id: 'r-' + Date.now(),
-        title,
-        emoji,
-        cost
-      });
+      if (editingRewardId) {
+        const reward = appData.rewards.find(item => item.id === editingRewardId);
+        if (!reward) return;
+        reward.title = title;
+        reward.emoji = emoji;
+        reward.cost = cost;
+      } else {
+        appData.rewards.push({
+          id: 'r-' + Date.now(),
+          title,
+          emoji,
+          cost
+        });
+      }
 
       saveData();
       closeRewardEditModal();
       renderAdminView();
-      showToast('New reward added to shop! 🎁', '✅');
+      renderShopView();
+      showToast(isEditing ? 'Reward updated! ✏️' : 'New reward added to shop! 🎁', '✅');
     }
 
     function saveSyncEndpoint() {
@@ -2100,6 +2217,10 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
+      document.addEventListener('pointerdown', startListReorder);
+      document.addEventListener('pointermove', moveListReorder);
+      document.addEventListener('pointerup', finishListReorder);
+      document.addEventListener('pointercancel', cancelListReorder);
       loadData();
       renderPointsBoard();
     });
