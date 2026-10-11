@@ -77,7 +77,7 @@
         <img src="./icons/icon-192.png" alt="" class="w-10 h-10 object-contain shrink-0">
         <div>
           <h1 class="text-xl sm:text-2xl font-bold font-heading text-indigo-950 tracking-tight leading-none">Parent Points</h1>
-          <p class="app-brand-subtitle text-[11px] font-semibold text-slate-400 mt-0.5">Atlas • Renn • Elio</p>
+          <p id="appBrandSubtitle" class="app-brand-subtitle text-[11px] font-semibold text-slate-400 mt-0.5"></p>
         </div>
       </div>
 
@@ -120,7 +120,7 @@
         <div class="relative z-10 max-w-2xl">
           <span class="inline-block text-xs font-bold uppercase tracking-wider bg-amber-950/15 text-amber-950 px-3 py-1 rounded-full mb-2">Family Goal Board</span>
           <h2 id="bannerHeadingText" class="text-2xl sm:text-4xl font-extrabold font-heading tracking-tight text-amber-950">Level Up & Celebrate! 🚀</h2>
-          <p id="bannerSubtextText" class="text-amber-900/90 text-sm sm:text-base font-semibold mt-1 leading-relaxed">Earn points by completing chores and being awesome brothers!</p>
+          <p id="bannerSubtextText" class="text-amber-900/90 text-sm sm:text-base font-semibold mt-1 leading-relaxed">Earn points by completing chores and helping the family!</p>
         </div>
         <button onclick="requestCelebrateAllPrompt()" class="relative z-10 bg-white hover:bg-amber-50 active:bg-amber-100 text-amber-950 font-bold px-5 py-3 rounded-2xl shadow-md border border-amber-200/80 flex items-center gap-2 tap-scale self-start sm:self-auto shrink-0 font-heading text-sm sm:text-base">
           <span>🎉</span> Celebrate All (+2)
@@ -147,7 +147,7 @@
           </div>
         </div>
         <div id="featuredChoreActions" class="flex flex-wrap gap-2 justify-end w-full sm:w-auto">
-          <!-- Quick action buttons per boy -->
+          <!-- Quick action buttons per child -->
         </div>
       </div>
 
@@ -184,7 +184,7 @@
           <p class="text-xs text-slate-500 font-medium">Select your card below to mark tasks complete or undo mistakes.</p>
         </div>
         <div id="choreEarnerSelector" class="flex flex-wrap gap-2">
-          <!-- Injected boys selector buttons -->
+          <!-- Injected child selector buttons -->
         </div>
       </div>
 
@@ -201,7 +201,7 @@
             <span class="text-2xl">⏳</span>
             <div>
               <h3 class="text-lg sm:text-xl font-bold font-heading text-slate-800">Pending Rewards Queue</h3>
-              <p class="text-xs text-slate-500 font-medium">Rewards purchased by the boys that have not been given yet.</p>
+              <p class="text-xs text-slate-500 font-medium">Rewards purchased by the children that have not been given yet.</p>
             </div>
           </div>
           <span id="pendingCountBadge" class="bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold px-3 py-1 rounded-full">0 Pending</span>
@@ -263,7 +263,7 @@
             <span class="text-2xl">⚖️</span>
             <div>
               <h3 class="text-base font-bold font-heading text-indigo-950">Manual Points Adjustment</h3>
-              <p class="text-xs text-slate-500 font-medium">Quickly add or deduct points for any boy with an optional reason note.</p>
+              <p class="text-xs text-slate-500 font-medium">Quickly add or deduct points for any child with an optional reason note.</p>
             </div>
           </div>
 
@@ -332,13 +332,40 @@
           </div>
         </div>
 
-        <!-- Boys Profiles & DOBs -->
+        <!-- Child Profiles & DOBs -->
         <div class="mt-8 pt-8 border-t border-slate-100">
-          <h3 class="text-base font-bold font-heading text-indigo-950 mb-4 flex items-center gap-2">
-            <span>👦</span> Boys Profiles & Birthdays (Dynamic Age Calculation)
+          <h3 class="text-base font-bold font-heading text-indigo-950 mb-2 flex items-center gap-2">
+            <span>👧</span> Children & Birthdays
           </h3>
+          <p class="text-xs text-slate-500 font-medium mb-4">Add or remove children here. Removing a child permanently removes their points and activity, pending reward requests, and chore assignments.</p>
           <div id="adminKidsList" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <!-- Dynamically populated boy edit cards -->
+            <!-- Dynamically populated child edit cards -->
+          </div>
+          <div class="mt-4 p-4 rounded-2xl bg-indigo-50 border border-indigo-100">
+            <h4 class="text-sm font-bold font-heading text-indigo-950 mb-3">Add a Child</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+              <div class="sm:col-span-2 lg:col-span-1">
+                <label for="adminNewKidName" class="block text-[11px] font-bold text-slate-600 mb-1">Name</label>
+                <input type="text" id="adminNewKidName" maxlength="40" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+              </div>
+              <div>
+                <label for="adminNewKidDob" class="block text-[11px] font-bold text-slate-600 mb-1">Birthday (Optional)</label>
+                <input type="date" id="adminNewKidDob" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+              </div>
+              <div>
+                <label for="adminNewKidGoal" class="block text-[11px] font-bold text-slate-600 mb-1">Goal (Points)</label>
+                <input type="number" id="adminNewKidGoal" min="1" step="1" value="20" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+              </div>
+              <div>
+                <label for="adminNewKidAvatar" class="block text-[11px] font-bold text-slate-600 mb-1">Avatar</label>
+                <select id="adminNewKidAvatar" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-lg bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"></select>
+              </div>
+              <div>
+                <label for="adminNewKidColor" class="block text-[11px] font-bold text-slate-600 mb-1">Color</label>
+                <select id="adminNewKidColor" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"></select>
+              </div>
+            </div>
+            <button type="button" onclick="addKidToRoster()" class="mt-3 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl tap-scale">+ Add Child</button>
           </div>
         </div>
 
@@ -379,10 +406,15 @@
           <h3 class="text-base font-bold font-heading text-rose-900 mb-2 flex items-center gap-2">
             <span>🧹</span> Start Fresh
           </h3>
-          <p class="text-xs text-slate-500 font-medium mb-3">Reset all kids' points and activity, today's chore records, and pending reward requests. Profiles, chores, rewards, and settings will be kept.</p>
-          <button onclick="requireParentPin(resetFamilyActivity)" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl tap-scale">
-            Reset Points & Activity
-          </button>
+          <p class="text-xs text-slate-500 font-medium mb-3">Reset all children's points and activity, chore records, and pending reward requests. Profiles, chores, rewards, and settings will be kept. Full Reset restores the starter family setup but keeps the Google Sheets connection.</p>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="requireParentPin(resetFamilyActivity)" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl tap-scale">
+              Reset Points & Activity
+            </button>
+            <button onclick="requireParentPin(resetFamilyData)" class="px-4 py-2 bg-rose-950 hover:bg-black text-white text-xs font-bold rounded-xl tap-scale">
+              Full Reset
+            </button>
+          </div>
         </div>
 
         <!-- Cloud Sync Endpoint -->
@@ -457,8 +489,8 @@
     <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 text-center relative">
       <button onclick="closeCelebrateAllModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-sm tap-scale flex items-center justify-center">✕</button>
       <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-500 text-4xl flex items-center justify-center mx-auto mb-3 shadow-inner">🎉</div>
-      <h3 class="text-xl font-bold font-heading text-slate-800">Celebrate All Boys!</h3>
-      <p class="text-xs text-slate-500 mb-4">Awards +2 points each to Atlas, Renn, and Elio!</p>
+      <h3 class="text-xl font-bold font-heading text-slate-800">Celebrate All Kids!</h3>
+      <p class="text-xs text-slate-500 mb-4">Awards +2 points to every child in your family!</p>
       
       <div class="text-left mb-5">
         <label class="block text-xs font-bold text-slate-600 mb-1">Reason / Note (Optional)</label>
@@ -539,16 +571,8 @@
 
         <div>
           <label class="block text-xs font-bold text-slate-600 mb-1.5">Who does this chore apply to?</label>
-          <div class="flex flex-wrap gap-x-4 gap-y-2 p-3 bg-slate-50 rounded-2xl border border-slate-200/80">
-            <label class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
-              <input type="checkbox" id="choreCheckAtlas" class="rounded-sm text-indigo-600 focus:ring-indigo-500"> Atlas
-            </label>
-            <label class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
-              <input type="checkbox" id="choreCheckRenn" class="rounded-sm text-indigo-600 focus:ring-indigo-500"> Renn
-            </label>
-            <label class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
-              <input type="checkbox" id="choreCheckElio" class="rounded-sm text-indigo-600 focus:ring-indigo-500"> Elio
-            </label>
+          <div id="choreApplicableKidsInputs" class="flex flex-wrap gap-x-4 gap-y-2 p-3 bg-slate-50 rounded-2xl border border-slate-200/80">
+            <!-- Dynamically populated child assignments -->
           </div>
         </div>
       </div>
@@ -663,7 +687,7 @@
       parentPin: '1234',
       banner: {
         heading: 'Level Up & Celebrate! 🚀',
-        subtext: 'Earn points by completing chores and being awesome brothers!'
+        subtext: 'Earn points by completing chores and helping the family!'
       },
       kids: [
         {
@@ -854,15 +878,21 @@
       if (!appData.parentPin) appData.parentPin = '1234';
       if (!appData.choreCompletions) appData.choreCompletions = {};
       if (!appData.choreLog) appData.choreLog = {};
+      if (!appData.kids.some(kid => kid.id === activeShopperId)) {
+        activeShopperId = appData.kids[0].id;
+      }
+      if (!appData.kids.some(kid => kid.id === activeChoreKidId)) {
+        activeChoreKidId = appData.kids[0].id;
+      }
     }
 
-    function saveData() {
+    function saveData(skipSync = false) {
       if (localDataCorrupt && !corruptDataBackupSaved) {
         showToast('Could not back up unreadable saved data. Changes are not being saved on this device.', '⚠️');
         return;
       }
       localStorage.setItem('parent_points_data_v3', JSON.stringify(appData));
-      syncWithGoogleSheet();
+      if (!skipSync) syncWithGoogleSheet();
     }
 
     function calculateAge(dobString) {
@@ -1045,6 +1075,7 @@
     function renderPointsBoard() {
       document.getElementById('bannerHeadingText').textContent = appData.banner.heading || DEFAULT_DATA.banner.heading;
       document.getElementById('bannerSubtextText').textContent = appData.banner.subtext || DEFAULT_DATA.banner.subtext;
+      document.getElementById('appBrandSubtitle').textContent = appData.kids.map(kid => kid.name).join(' • ');
 
       const grid = document.getElementById('kidsGrid');
       grid.innerHTML = '';
@@ -1226,7 +1257,7 @@
       renderPointsBoard();
       closeCelebrateAllModal();
       playChime('fanfare');
-      showToast('🎉 +2 Points awarded to Atlas, Renn, and Elio!', '🎉');
+      showToast(`🎉 +2 Points awarded to ${appData.kids.map(kid => kid.name).join(', ')}!`, '🎉');
     }
 
     function openKidProfileModal(kidId) {
@@ -1448,7 +1479,7 @@
       if (list.length === 0) {
         grid.innerHTML = `
           <div class="col-span-full py-6 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-400 text-xs font-medium">
-            ✨ No chores marked complete yet today. As Atlas, Renn, and Elio complete tasks, they will roll up here!
+            ✨ No chores marked complete yet today. Completed chores will show up here!
           </div>
         `;
         return;
@@ -1814,7 +1845,8 @@
         div.innerHTML = `
           <div class="flex items-center gap-2 mb-1">
             <span class="text-2xl">${escapeHtml(kid.avatar)}</span>
-            <span class="font-bold text-slate-800 text-sm font-heading">${escapeHtml(kid.name)}</span>
+            <label class="sr-only" for="adminKidName-${escapeHtml(kid.id)}">Child name</label>
+            <input type="text" id="adminKidName-${escapeHtml(kid.id)}" maxlength="40" value="${escapeHtml(kid.name)}" onchange="updateKidName(${htmlArg(kid.id)}, this.value)" class="min-w-0 flex-1 px-2.5 py-1.5 rounded-xl border border-slate-300 text-sm font-bold font-heading focus:ring-2 focus:ring-indigo-500 focus:outline-hidden" aria-label="Name for ${escapeHtml(kid.name)}">
           </div>
           <div>
             <label class="block text-[11px] font-bold text-slate-500">Date of Birth (YYYY-MM-DD)</label>
@@ -1824,9 +1856,19 @@
             <span class="text-slate-400">Current Balance:</span>
             <span class="font-mono font-bold text-indigo-700">${escapeHtml(kid.points)} pts</span>
           </div>
+          <button type="button" onclick="removeKidFromRoster(${htmlArg(kid.id)})" class="mt-1 px-3 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold text-xs tap-scale">Remove Child</button>
         `;
         kidsList.appendChild(div);
       });
+
+      const avatarSelect = document.getElementById('adminNewKidAvatar');
+      avatarSelect.innerHTML = EMOJI_OPTIONS.map(emoji =>
+        `<option value="${escapeHtml(emoji)}">${escapeHtml(emoji)}</option>`
+      ).join('');
+      const colorSelect = document.getElementById('adminNewKidColor');
+      colorSelect.innerHTML = Object.values(THEME_COLORS).map(color =>
+        `<option value="${escapeHtml(color.id)}">${escapeHtml(color.name)}</option>`
+      ).join('');
 
       const choresList = document.getElementById('adminChoresList');
       choresList.innerHTML = '';
@@ -1854,7 +1896,7 @@
               <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
                 <span class="text-[11px] font-bold text-slate-400 mr-1">Assigned:</span>
                 ${appData.kids.map(k => {
-                  const isAssigned = (chore.applicableKids || []).includes(k.id);
+                  const isAssigned = !chore.applicableKids || chore.applicableKids.length === 0 || chore.applicableKids.includes(k.id);
                   return `
                     <button type="button" onclick="toggleChoreKid(${htmlArg(chore.id)}, ${htmlArg(k.id)})" class="px-2.5 py-1 rounded-lg font-bold text-[11px] tap-scale transition-all flex items-center gap-1 ${
                       isAssigned 
@@ -2040,6 +2082,31 @@
       showToast('Points and activity reset. Your family setup was kept.', '✅');
     }
 
+    function resetFamilyData() {
+      if (localDataCorrupt && !corruptDataBackupSaved) {
+        showToast('Full reset is paused because unreadable saved data could not be backed up.', '⚠️');
+        return;
+      }
+
+      const confirmed = window.confirm(
+        'Full Reset will replace this family’s data with the starter setup. This resets children and their points, chores, rewards, banner, and Parent PIN (back to 1234). The Google Sheets connection will be kept. This cannot be undone. Continue?'
+      );
+      if (!confirmed) return;
+
+      appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+      activeShopperId = appData.kids[0].id;
+      activeChoreKidId = appData.kids[0].id;
+      editingKidProfileId = null;
+      editingChoreId = null;
+      editingRewardId = null;
+      localDataCorrupt = false;
+      corruptDataBackupSaved = true;
+      saveData(true);
+      syncWithGoogleSheet(false, true);
+      renderSyncedData();
+      showToast('Full reset complete. Your Google Sheets connection was kept.', '✅');
+    }
+
     function saveBannerSettings() {
       appData.banner.heading = document.getElementById('adminBannerHead').value.trim() || DEFAULT_DATA.banner.heading;
       appData.banner.subtext = document.getElementById('adminBannerSub').value.trim() || DEFAULT_DATA.banner.subtext;
@@ -2067,6 +2134,122 @@
       }
     }
 
+    function updateKidName(kidId, newName) {
+      const kid = appData.kids.find(item => item.id === kidId);
+      if (!kid) return;
+
+      const name = newName.trim();
+      if (!name) {
+        showToast('A child name cannot be empty.', '⚠️');
+        renderAdminView();
+        return;
+      }
+      if (name.length > 40) {
+        showToast('A child name must be 40 characters or fewer.', '⚠️');
+        renderAdminView();
+        return;
+      }
+      if (kid.name === name) return;
+
+      kid.name = name;
+      saveData();
+      renderSyncedData();
+      showToast(`Name updated to ${name}.`, '✅');
+    }
+
+    function addKidToRoster() {
+      const nameInput = document.getElementById('adminNewKidName');
+      const dobInput = document.getElementById('adminNewKidDob');
+      const goalInput = document.getElementById('adminNewKidGoal');
+      const name = nameInput.value.trim();
+      const targetGoal = Number(goalInput.value);
+      if (!name) {
+        showToast('Enter a name for the child.', '⚠️');
+        nameInput.focus();
+        return;
+      }
+      if (!Number.isSafeInteger(targetGoal) || targetGoal <= 0) {
+        showToast('The point goal must be a positive whole number.', '⚠️');
+        goalInput.focus();
+        return;
+      }
+
+      let id;
+      do {
+        id = `kid-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      } while (appData.kids.some(kid => kid.id === id));
+
+      appData.kids.push({
+        id,
+        name,
+        dob: dobInput.value,
+        points: 0,
+        targetGoal,
+        color: document.getElementById('adminNewKidColor').value,
+        avatar: document.getElementById('adminNewKidAvatar').value,
+        history: []
+      });
+      const previousKidIds = appData.kids.slice(0, -1).map(kid => kid.id);
+      appData.chores.forEach(chore => {
+        const applicableKids = chore.applicableKids || [];
+        if (
+          applicableKids.length > 0 &&
+          applicableKids.length === previousKidIds.length &&
+          previousKidIds.every(kidId => applicableKids.includes(kidId))
+        ) {
+          chore.applicableKids.push(id);
+        }
+      });
+
+      nameInput.value = '';
+      dobInput.value = '';
+      goalInput.value = '20';
+      saveData();
+      renderSyncedData();
+      showToast(`${name} was added to the family!`, '✅');
+    }
+
+    function removeKidFromRoster(kidId) {
+      const kid = appData.kids.find(item => item.id === kidId);
+      if (!kid) return;
+      if (appData.kids.length <= 1) {
+        showToast('A family must have at least one child.', '⚠️');
+        return;
+      }
+
+      const confirmed = window.confirm(
+        `Remove ${kid.name}? Their points and activity, pending reward requests, and chore assignments will be permanently removed. Any chore that was assigned only to ${kid.name} will apply to all remaining children.`
+      );
+      if (!confirmed) return;
+
+      appData.kids = appData.kids.filter(item => item.id !== kidId);
+      appData.chores.forEach(chore => {
+        if (Array.isArray(chore.applicableKids)) {
+          chore.applicableKids = chore.applicableKids.filter(id => id !== kidId);
+          if (chore.applicableKids.length === 0) {
+            chore.applicableKids = appData.kids.map(item => item.id);
+          }
+        }
+      });
+      Object.values(appData.choreCompletions || {}).forEach(day => {
+        Object.keys(day).forEach(choreId => {
+          day[choreId] = day[choreId].filter(id => id !== kidId);
+        });
+      });
+      Object.keys(appData.choreLog || {}).forEach(day => {
+        appData.choreLog[day] = appData.choreLog[day].filter(entry => entry.kidId !== kidId);
+      });
+      appData.pendingRewards = (appData.pendingRewards || []).filter(item => item.kidId !== kidId);
+
+      if (activeShopperId === kidId) activeShopperId = appData.kids[0].id;
+      if (activeChoreKidId === kidId) activeChoreKidId = appData.kids[0].id;
+      if (editingKidProfileId === kidId) editingKidProfileId = null;
+
+      saveData();
+      renderSyncedData();
+      showToast(`${kid.name} was removed from the family.`, '🗑️');
+    }
+
     function setFeaturedChore(choreId) {
       appData.featuredChoreId = choreId;
       saveData();
@@ -2077,10 +2260,16 @@
     function toggleChoreKid(choreId, kidId) {
       const chore = appData.chores.find(c => c.id === choreId);
       if (!chore) return;
-      if (!chore.applicableKids) chore.applicableKids = [];
+      if (!chore.applicableKids || chore.applicableKids.length === 0) {
+        chore.applicableKids = appData.kids.map(kid => kid.id);
+      }
       
       const idx = chore.applicableKids.indexOf(kidId);
       if (idx !== -1) {
+        if (chore.applicableKids.length === 1) {
+          showToast('A chore must be assigned to at least one child.', '⚠️');
+          return;
+        }
         chore.applicableKids.splice(idx, 1);
       } else {
         chore.applicableKids.push(kidId);
@@ -2110,9 +2299,7 @@
       document.getElementById('choreInputTitle').value = '';
       document.getElementById('choreInputEmoji').value = '🧹';
       document.getElementById('choreInputPoints').value = '2';
-      document.getElementById('choreCheckAtlas').checked = true;
-      document.getElementById('choreCheckRenn').checked = true;
-      document.getElementById('choreCheckElio').checked = true;
+      renderChoreKidAssignments(appData.kids.map(kid => kid.id));
       document.getElementById('choreEditModal').classList.remove('hidden');
     }
 
@@ -2127,11 +2314,21 @@
       document.getElementById('choreInputPoints').value = (chore.points !== undefined && chore.points !== null) ? chore.points : '';
       
       const applicable = chore.applicableKids || [];
-      document.getElementById('choreCheckAtlas').checked = applicable.includes('kid-atlas');
-      document.getElementById('choreCheckRenn').checked = applicable.includes('kid-renn');
-      document.getElementById('choreCheckElio').checked = applicable.includes('kid-elio');
+      renderChoreKidAssignments(
+        applicable.length > 0 ? applicable : appData.kids.map(kid => kid.id)
+      );
       
       document.getElementById('choreEditModal').classList.remove('hidden');
+    }
+
+    function renderChoreKidAssignments(selectedKidIds) {
+      const container = document.getElementById('choreApplicableKidsInputs');
+      container.innerHTML = appData.kids.map(kid => `
+        <label class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+          <input type="checkbox" data-kid-id="${escapeHtml(kid.id)}" class="rounded-sm text-indigo-600 focus:ring-indigo-500" ${selectedKidIds.includes(kid.id) ? 'checked' : ''}>
+          ${escapeHtml(kid.avatar)} ${escapeHtml(kid.name)}
+        </label>
+      `).join('');
     }
 
     function closeChoreEditModal() {
@@ -2148,10 +2345,13 @@
         return;
       }
 
-      const applicable = [];
-      if (document.getElementById('choreCheckAtlas').checked) applicable.push('kid-atlas');
-      if (document.getElementById('choreCheckRenn').checked) applicable.push('kid-renn');
-      if (document.getElementById('choreCheckElio').checked) applicable.push('kid-elio');
+      const applicable = Array.from(
+        document.querySelectorAll('#choreApplicableKidsInputs input[data-kid-id]:checked')
+      ).map(input => input.dataset.kidId);
+      if (applicable.length === 0) {
+        showToast('Select at least one child for this chore.', '⚠️');
+        return;
+      }
 
       const parsedPoints = ptsVal === '' ? '' : parseInt(ptsVal, 10);
 
@@ -2265,6 +2465,12 @@
     }
 
     function renderSyncedData() {
+      if (!appData.kids.some(kid => kid.id === activeShopperId)) {
+        activeShopperId = appData.kids[0].id;
+      }
+      if (!appData.kids.some(kid => kid.id === activeChoreKidId)) {
+        activeChoreKidId = appData.kids[0].id;
+      }
       renderPointsBoard();
       renderChoresView();
       renderShopView();
@@ -2365,14 +2571,33 @@
       });
     }
 
-    function syncWithGoogleSheet(forcePull = false) {
-      const operation = syncQueue.then(() => performSyncWithGoogleSheet(forcePull));
+    function syncWithGoogleSheet(forcePull = false, overwriteRemote = false) {
+      const operation = syncQueue.then(() =>
+        overwriteRemote ? performFullResetSync() : performSyncWithGoogleSheet(forcePull)
+      );
       syncQueue = operation.catch(error => {
         console.error('Unexpected Google Sheets sync failure:', error);
         updateSyncStatus('Sync failed · your changes are still saved on this device');
         showToast('Cloud sync failed. Your changes are still saved on this device.', '⚠️');
       });
       return syncQueue;
+    }
+
+    async function performFullResetSync() {
+      const url = localStorage.getItem('parent_points_sync_url');
+      if (!url) {
+        updateSyncStatus('Sync not set up · configure the URL in Admin');
+        return;
+      }
+
+      updateSyncStatus('Resetting Google Sheets data…');
+      const current = await pullFromGoogleSheet(url);
+      if (!isValidSyncResponse(current)) {
+        throw new Error('Apps Script deployment does not support revision-checked sync');
+      }
+
+      const upload = await sendDataToGoogleSheet(url, JSON.stringify(appData), current.revision);
+      if (!upload.synced) reportSyncConflict();
     }
 
     async function performSyncWithGoogleSheet(forcePull = false) {

@@ -1,7 +1,7 @@
 {
   "name": "Parent Points Tracker",
   "short_name": "Parent Points",
-  "description": "Family points and chore reward tracker for Atlas, Renn, and Elio",
+  "description": "Family points and chore reward tracker",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
