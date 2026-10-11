@@ -1,6 +1,6 @@
 # Parent Points Tracker
 
-A small, installable family points app for tracking chores, points, and rewards. The app is a static website: it does not require an app-store install or a server to run. It can be opened in a browser, installed as a Progressive Web App (PWA), and optionally synced through a family's own Google Sheet and Apps Script web app.
+A small, installable family points app for tracking chores, points, and rewards. The app is a static website: it does not require an app-store install or a server to run. It can be opened in a browser, installed as a Progressive Web App (PWA), and used locally or synced with a family's own Google Sheet. Google Sheets can be connected directly with Google sign-in, or through the legacy Apps Script option.
 
 ## Try the app
 
@@ -20,7 +20,8 @@ The PWA caches the app shell for offline use after it has loaded successfully on
 - Provides a reward shop and a queue for reward requests awaiting fulfillment.
 - Lets a parent manage the family banner, PIN, child roster, chores, and rewards in Admin.
 - Supports multiple children. A parent can add a child with a name, optional birthday, point goal, avatar, and color; edit a name or birthday; and remove a child with confirmation.
-- Saves changes in the current browser by default. Optional Google Sheets sync lets devices that use the same family endpoint share the same app data.
+- Offers a first-run choice to use local storage, connect a family's Apps Script URL, or create/connect a Google Sheet using Google sign-in.
+- Saves changes in the current browser by default. Optional Google Sheets sync lets authorized devices share the same app data.
 
 ### Admin and reset options
 
@@ -31,11 +32,11 @@ Open **Admin** and enter the Parent PIN. The initial PIN is `1234`; change it in
 
 The PIN is a convenience gate in the app, not a security boundary for data stored in the browser or Google Sheet.
 
-## Important: starter data
+## First-run setup and starter data
 
-The current version's starter data is configured for the app author's family. A first-time visitor with no saved browser data sees that starter roster and settings. **Do not treat Full Reset as a blank-family reset**: it restores the same starter data. Existing saved data is not automatically changed when the app updates.
+On a first visit with no saved app data, the app offers three choices: create/connect a Google Sheet, paste a family's existing Apps Script sync URL, or use the app on this device only. The starter data is neutral sample data (one profile named **Child 1**, generic chores and rewards). Add or rename profiles in Admin. Full Reset returns to this neutral starter setup. Existing saved family data is not automatically changed by app updates.
 
-For a pilot, ask a tester to add/edit their roster in Admin and avoid connecting them to the author's Sheet. Before broader public onboarding, replace the starter data with neutral defaults and review the shipped app for any personal family data.
+The app does not yet support choosing an existing shared Sheet through Google Picker. The direct Google sign-in flow can find Sheets created by this app in the same Google account, which is useful when reconnecting another device signed into that same account. To join a different family member's sheet with the direct API flow, Picker-based shared-sheet selection still needs to be implemented. In the meantime, a family can use its Apps Script URL option.
 
 ## Where data is stored
 
@@ -46,17 +47,37 @@ Without Google Sheets sync, the app stores its data in browser `localStorage`. T
 - Anyone using the same browser profile can access that local app data.
 - The app shell may be cached for offline use, but cloud sync cannot run offline.
 
-With Google Sheets sync, the app stores a JSON snapshot in the sheet named `AppData`: cell `A1` contains the app data and `B1` contains a revision number used to detect competing updates. This includes the roster, birthdays, points, activity, chore and reward configuration, pending rewards, and the app's Parent PIN.
+With either Google Sheets sync option, the app stores a JSON snapshot in the sheet tab named `AppData`: cell `A1` contains the app data and `B1` contains a revision number. The snapshot includes the roster, birthdays, points, activity, chore and reward configuration, pending rewards, and the app's Parent PIN.
 
-## Set up Google Sheets sync
+## Direct Google sign-in setup (app maintainer)
 
-Each family should create and control its **own spreadsheet and Apps Script deployment**. Do not paste another family's endpoint into your app, use a shared test spreadsheet for real family data, or publish the deployed endpoint in a public repository, chat, or website.
+The direct sign-in flow creates a private `Parent Points Family Data` spreadsheet in the signed-in user's Drive, initializes its `AppData` tab, and reads/writes through the Google Sheets API. The Drive API is also used to find spreadsheets created by this app when the same Google account connects from another browser or device. OAuth access tokens are held in memory and are not saved in local storage; Google access must be renewed from a user action after a token expires.
+
+Before this button can work on a deployed copy, the app maintainer must configure a Google Cloud project:
+
+1. Create/select a project in [Google Cloud Console](https://console.cloud.google.com/).
+2. Enable **Google Sheets API** and **Google Drive API** for that project.
+3. Configure the OAuth consent screen/Google Auth Platform with the app name, support email, and audience. Add pilot users as test users while the app is in testing mode.
+4. Create an **OAuth client ID** of type **Web application**.
+5. Add the published origin (currently `https://deytrfrancisco.github.io`) to **Authorized JavaScript origins**. For local HTTPS development, add only the exact development origin you use.
+6. Copy the client ID into `GOOGLE_OAUTH_CLIENT_ID` near the top of the app's inline JavaScript in [`index.html`](./index.html). The client ID is public browser configuration, not a client secret. Never put a client secret in this static app.
+7. Deploy the app changes to GitHub Pages. Open it over HTTPS, choose **Create a Google Sheet**, and grant the requested access. The Google account creates/owns the Sheet. The app's first connection initializes that Sheet with the current browser's app data.
+
+The app requests the `drive.file` scope, which is intended to limit access to files created/opened with this app, rather than unrestricted access to the user's Drive. The app currently creates new files and discovers files it created; it does not yet provide Google Picker to select an existing shared spreadsheet. A Google family member who uses a different Google account cannot connect to the direct-created Sheet through Picker yet; use the Apps Script URL option as a pilot workaround or wait for Picker support.
+
+The direct API path uses a read-then-write revision check and verifies writes, but Google Sheets does not provide the atomic compare-and-set used by the Apps Script `LockService` flow. Treat this first version as suitable for a small pilot where edits are not simultaneous; concurrent writes may still race. A stronger multi-writer experience needs an authenticated backend or another atomic coordination mechanism.
+
+OAuth consent, verification, and API quota requirements are set by Google and can change. Testing-mode OAuth apps are limited to configured test users. Do not describe this setup as a guaranteed free service or as a production security review.
+
+## Legacy Apps Script sync setup
+
+This remains available for families who already have a deployed endpoint or want to connect another device using a shared endpoint. Each family should create and control its **own spreadsheet and Apps Script deployment**. Do not paste another family's endpoint into your app, use a shared test spreadsheet for real family data, or publish the deployed endpoint in a public repository, chat, or website.
 
 ### Security and privacy warning
 
-The current Apps Script endpoint has **no user authentication or per-family authorization**. Anyone who obtains its web app URL may be able to read or overwrite the data in the spreadsheet it is configured to use. The app's Parent PIN does not protect the endpoint; the PIN itself is included in the synced data. Google Apps Script deployment access settings may make the endpoint accessible to anyone, depending on the option selected.
+The legacy Apps Script endpoint has **no user authentication or per-family authorization**. Anyone who obtains its web app URL may be able to read or overwrite the data in the spreadsheet it is configured to use. The app's Parent PIN does not protect the endpoint; the PIN itself is included in the synced data. Google Apps Script deployment access settings may make the endpoint accessible to anyone, depending on the option selected.
 
-Use this sync flow only for a small, trusted test with non-sensitive data, and share the endpoint privately only with the person who needs to connect another device to that family's data. Do not store information you would not want exposed to someone who gets the URL. This is not suitable for public multi-family production use; that needs authenticated access and stronger server-side authorization.
+Use this legacy sync flow only for a small, trusted test with non-sensitive data, and share the endpoint privately only with the person who needs to connect another device to that family's data. Do not store information you would not want exposed to someone who gets the URL. This is not suitable for public multi-family production use; that needs authenticated access and stronger server-side authorization.
 
 ### Create the spreadsheet
 
@@ -201,7 +222,7 @@ The app saves its endpoint and current Sheet revision in that browser's local st
 
 ## Small pilot with another person
 
-For the simplest test, send them the GitHub Pages link and have them try it without Sheets. Their browser uses its own local storage on their device. If the point of the test is cross-device sync, create a **separate test spreadsheet and Apps Script deployment** for that test family, connect the first device, then privately give the second trusted tester the same `/exec` URL. Both devices will then be working with the same test family's data.
+For the simplest test, send them the GitHub Pages link. Their first visit offers local-only use, a Google Sheet, or a family Apps Script URL. Direct sign-in must first be enabled/configured by the app owner, and Google OAuth testing may require adding the tester as a test user. The direct Sheet flow can rediscover a Sheet on another device signed into the same Google account. To share a family's data with someone using a different Google account, create a **separate test spreadsheet and Apps Script deployment** and privately give the trusted tester that family's `/exec` URL; the Apps Script endpoint has the security limitations above.
 
 Never give a tester the endpoint currently used by another family. The endpoint is effectively a bearer link: possession grants access under the current implementation.
 
@@ -216,4 +237,3 @@ The app is hosted as static files on GitHub Pages. After changes to the reposito
 - [`manifest.webmanifest`](./manifest.webmanifest) — installable PWA metadata.
 - [`service-worker.js`](./service-worker.js) — app-shell caching and offline behavior.
 - [`icons/`](./icons/) — PWA icons.
-

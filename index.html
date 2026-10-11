@@ -21,6 +21,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <style>
     body {
@@ -420,6 +421,12 @@
           <h3 class="text-base font-bold font-heading text-indigo-950 mb-2 flex items-center gap-2">
             <span>☁️</span> Google Drive / Google Sheets Cloud Sync
           </h3>
+          <p id="googleSheetsConnectionStatus" class="text-xs text-slate-500 font-medium mb-3">Create a private family spreadsheet in your Google Drive and sync directly, without deploying a script.</p>
+          <div class="flex flex-wrap gap-2 mb-4">
+            <button type="button" id="googleSheetsConnectButton" onclick="beginGoogleSheetSetup()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl tap-scale">🔐 Sign in & Create Family Sheet</button>
+            <button type="button" id="disconnectGoogleSheetButton" onclick="disconnectGoogleSheet()" class="hidden px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl tap-scale">Disconnect Google Sheet</button>
+          </div>
+          <p class="text-[11px] text-slate-500 font-medium mb-4">Google sign-in creates or reconnects a Sheet for this Google account. Shared Sheets owned by a different account are not supported in this setup yet. To join an existing family sync, use that family's Apps Script URL below.</p>
           <p class="text-xs text-slate-500 font-medium mb-3">Deploy the <a href="./google-apps-script.js" target="_blank" rel="noopener" class="text-indigo-600 underline">revision-checking Apps Script</a>, then paste its Web App URL ending in <code>/exec</code>. Every device must use the updated app and script for conflict protection.</p>
           <div class="flex flex-col sm:flex-row gap-2 max-w-xl">
             <input type="url" id="adminSyncUrlInput" placeholder="https://script.google.com/macros/s/.../exec" class="min-w-0 w-full flex-1 px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
@@ -431,6 +438,36 @@
   </main>
 
   <!-- Modals -->
+  <div id="setupOnboardingModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-lg w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-6 sm:p-8 shadow-2xl border border-slate-100">
+      <div class="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 text-3xl flex items-center justify-center mb-4">🌟</div>
+      <h2 class="text-2xl font-bold font-heading text-slate-800 mb-2">Set up your family tracker</h2>
+      <p class="text-sm text-slate-600 mb-5">Choose how this family will save its points and activity. You can change sync settings later in Admin.</p>
+      <div class="space-y-3">
+        <button type="button" onclick="beginGoogleSheetSetup()" class="w-full p-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-left text-white tap-scale">
+          <span class="block font-bold">🔐 Create a Google Sheet</span>
+          <span class="block mt-1 text-xs text-indigo-100">Sign in to create a private family Sheet and sync this setup.</span>
+        </button>
+        <details id="setupGoogleConfigNotice" class="text-[11px] text-slate-600 -mt-1 rounded-xl bg-amber-50 border border-amber-200 p-3">
+          <summary class="cursor-pointer font-bold text-amber-900">Why can't I sign in yet?</summary>
+          <p class="mt-2">This is a one-time setup for the app owner, not something every family needs to do. The owner must enable Google Sheets and Drive APIs in Google Cloud, create a Web application OAuth client ID, authorize <code>https://deytrfrancisco.github.io</code>, put that client ID in <code>GOOGLE_OAUTH_CLIENT_ID</code> in <a href="https://github.com/deytrfrancisco/parent-points/blob/main/index.html" target="_blank" rel="noopener" class="underline font-bold">index.html</a>, and publish the update.</p>
+          <p class="mt-2">After that, families can choose this option, sign in to Google, and approve access; the app creates their Sheet. They do not configure Google Cloud or deploy a script. <a href="https://github.com/deytrfrancisco/parent-points#direct-google-sign-in-setup-app-maintainer" target="_blank" rel="noopener" class="underline font-bold">See the full owner setup instructions</a>.</p>
+        </details>
+        <button type="button" onclick="showSetupAppsScriptLink()" class="w-full p-4 rounded-2xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-left text-emerald-950 tap-scale">
+          <span class="block font-bold">🔗 I have a family sync link</span>
+          <span class="block mt-1 text-xs text-emerald-800">Paste the Apps Script web app URL shared by your family.</span>
+        </button>
+        <div id="setupAppsScriptLinkPanel" class="hidden p-4 rounded-2xl bg-slate-50 border border-slate-200">
+          <label for="setupSyncUrlInput" class="block text-xs font-bold text-slate-700 mb-1">Family Apps Script URL</label>
+          <input type="url" id="setupSyncUrlInput" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+          <button type="button" onclick="connectSetupSyncUrl()" class="mt-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl tap-scale">Connect family sync</button>
+        </div>
+        <button type="button" onclick="continueWithoutSync()" class="w-full p-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold tap-scale">Use on this device only</button>
+      </div>
+      <p class="text-[11px] text-slate-400 mt-4">A Google Sheet is accessible to anyone you share it with. The app's Parent PIN does not restrict access to synced data.</p>
+    </div>
+  </div>
+
   <div id="pinModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 text-center">
       <div class="flex justify-between items-center mb-2">
@@ -681,6 +718,10 @@
       '🌟', '🍦', '🍕', '🎯', '👑', '🦸'
     ];
 
+    const GOOGLE_OAUTH_CLIENT_ID = 'YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com';
+    const GOOGLE_SHEETS_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+    const GOOGLE_FAMILY_SHEET_TITLE = 'Parent Points Family Data';
+
     const DEFAULT_DATA = {
       parentPin: '1234',
       banner: {
@@ -689,54 +730,27 @@
       },
       kids: [
         {
-          id: 'kid-atlas',
-          name: 'Atlas',
-          dob: '2019-07-17',
-          points: 0,
-          targetGoal: 50,
-          color: 'blue',
-          avatar: '🚀',
-          history: []
-        },
-        {
-          id: 'kid-renn',
-          name: 'Renn',
-          dob: '2022-05-11',
-          points: 0,
-          targetGoal: 30,
-          color: 'orange',
-          avatar: '🦖',
-          history: []
-        },
-        {
-          id: 'kid-elio',
-          name: 'Elio',
-          dob: '2024-04-05',
+          id: 'kid-1',
+          name: 'Child 1',
+          dob: '',
           points: 0,
           targetGoal: 20,
-          color: 'green',
-          avatar: '🚗',
+          color: 'blue',
+          avatar: '🌟',
           history: []
         }
       ],
-      featuredChoreId: 'c-piano',
+      featuredChoreId: 'c-tidy',
       chores: [
-        { id: 'c-piano', title: 'Piano Practice (20 mins)', emoji: '🎹', points: 3, applicableKids: ['kid-atlas', 'kid-renn'] },
-        { id: 'c-vacuum', title: 'Vacuum Family Room', emoji: '🧹', points: 4, applicableKids: ['kid-atlas'] },
-        { id: 'c-dishes', title: 'Empty Silverware / Dishes', emoji: '🍽️', points: 2, applicableKids: ['kid-atlas', 'kid-renn'] },
-        { id: 'c-nami', title: 'Feed Nami the Dog 🐕', emoji: '🦴', points: 1, applicableKids: ['kid-atlas', 'kid-renn', 'kid-elio'] },
-        { id: 'c-teeth', title: 'Brush Teeth Morning & Night', emoji: '🪥', points: '', applicableKids: ['kid-atlas', 'kid-renn', 'kid-elio'] },
-        { id: 'c-toys', title: 'Put Away All Toys', emoji: '🧸', points: 2, applicableKids: ['kid-atlas', 'kid-renn', 'kid-elio'] },
-        { id: 'c-hamper', title: 'Put Clothes in Hamper', emoji: '🧺', points: '', applicableKids: ['kid-atlas', 'kid-renn', 'kid-elio'] }
+        { id: 'c-tidy', title: 'Tidy Up', emoji: '🧹', points: 2, applicableKids: ['kid-1'] },
+        { id: 'c-teeth', title: 'Brush Teeth', emoji: '🪥', points: 1, applicableKids: ['kid-1'] },
+        { id: 'c-help', title: 'Help Around the House', emoji: '✨', points: 2, applicableKids: ['kid-1'] }
       ],
       rewards: [
-        { id: 'r-treat', title: 'Pick Dinner Dessert / Treat', emoji: '🍦', cost: 5 },
-        { id: 'r-story', title: 'Extra Bedtime Story + Snuggle', emoji: '📖', cost: 8 },
-        { id: 'r-dollar', title: 'Dollar Store Surprise Prize', emoji: '🎁', cost: 10 },
-        { id: 'r-game30', title: '30 Mins Extra Screen / Game', emoji: '🎮', cost: 15 },
-        { id: 'r-park', title: 'Pick the Weekend Park Outing', emoji: '🏞️', cost: 20 },
-        { id: 'r-movie', title: 'Family Movie Night Choice & Popcorn', emoji: '🍿', cost: 25 },
-        { id: 'r-lego', title: 'New Lego Set / Big Toy Wish', emoji: '🧱', cost: 45 }
+        { id: 'r-treat', title: 'Choose a Treat', emoji: '🍦', cost: 5 },
+        { id: 'r-story', title: 'Extra Bedtime Story', emoji: '📖', cost: 8 },
+        { id: 'r-game', title: 'Extra Screen or Game Time', emoji: '🎮', cost: 15 },
+        { id: 'r-outing', title: 'Choose a Family Outing', emoji: '🏞️', cost: 20 }
       ],
       pendingRewards: [],
       choreCompletions: {},
@@ -744,8 +758,8 @@
     };
 
     let appData = {};
-    let activeShopperId = 'kid-atlas';
-    let activeChoreKidId = 'kid-atlas';
+    let activeShopperId = 'kid-1';
+    let activeChoreKidId = 'kid-1';
     let parentSessionExpiry = 0;
     let pinInputString = "";
     let pendingPinCallback = null;
@@ -759,6 +773,11 @@
     let localDataCorrupt = false;
     let corruptDataBackupSaved = true;
     let syncQueue = Promise.resolve();
+    let firstRunSetupPending = false;
+    let googleAccessToken = null;
+    let googleAccessTokenExpiresAt = 0;
+    let googleTokenClient = null;
+    let pendingGoogleTokenAction = null;
 
     function escapeHtml(value) {
       return String(value ?? '').replace(/[&<>"']/g, character => ({
@@ -851,6 +870,10 @@
       localDataCorrupt = false;
       corruptDataBackupSaved = true;
       const saved = localStorage.getItem('parent_points_data_v3');
+      firstRunSetupPending = !saved &&
+        !localStorage.getItem('parent_points_sync_url') &&
+        !localStorage.getItem('parent_points_google_sheet_id') &&
+        !localStorage.getItem('parent_points_onboarding_dismissed');
       if (saved) {
         try {
           appData = JSON.parse(saved);
@@ -1825,6 +1848,7 @@
       document.getElementById('adminBannerSub').value = appData.banner.subtext || '';
       document.getElementById('adminPinInput').value = appData.parentPin || '1234';
       document.getElementById('adminSyncUrlInput').value = localStorage.getItem('parent_points_sync_url') || '';
+      updateGoogleSheetsConnectionStatus();
 
       const adjustSelect = document.getElementById('manualAdjustKidSelect');
       adjustSelect.innerHTML = '';
@@ -2443,9 +2467,289 @@
       if (localStorage.getItem('parent_points_sync_url') !== url) {
         localStorage.removeItem('parent_points_sync_revision_v1');
       }
+      localStorage.removeItem('parent_points_google_sheet_id');
       localStorage.setItem('parent_points_sync_url', url);
+      updateGoogleSheetsConnectionStatus();
+      dismissSetupOnboarding();
       updateSyncStatus('Checking Google Sheets…');
       syncWithGoogleSheet(true);
+    }
+
+    function showSetupAppsScriptLink() {
+      document.getElementById('setupAppsScriptLinkPanel').classList.remove('hidden');
+      document.getElementById('setupSyncUrlInput').focus();
+    }
+
+    function connectSetupSyncUrl() {
+      const url = document.getElementById('setupSyncUrlInput').value.trim();
+      if (!url) {
+        showToast('Paste the family Apps Script web app URL first.', '⚠️');
+        return;
+      }
+      document.getElementById('adminSyncUrlInput').value = url;
+      saveSyncEndpoint();
+      document.getElementById('setupOnboardingModal').classList.add('hidden');
+    }
+
+    function continueWithoutSync() {
+      dismissSetupOnboarding();
+      localStorage.setItem('parent_points_onboarding_dismissed', 'true');
+      saveData(true);
+      document.getElementById('setupOnboardingModal').classList.add('hidden');
+      updateSyncStatus('Using this device only · data is saved in this browser');
+    }
+
+    function dismissSetupOnboarding() {
+      firstRunSetupPending = false;
+      localStorage.setItem('parent_points_onboarding_dismissed', 'true');
+      const modal = document.getElementById('setupOnboardingModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function updateGoogleSheetsConnectionStatus() {
+      const status = document.getElementById('googleSheetsConnectionStatus');
+      const disconnectButton = document.getElementById('disconnectGoogleSheetButton');
+      const connectButton = document.getElementById('googleSheetsConnectButton');
+      const setupNotice = document.getElementById('setupGoogleConfigNotice');
+      if (!status || !disconnectButton || !connectButton) return;
+
+      const sheetId = localStorage.getItem('parent_points_google_sheet_id');
+      status.textContent = sheetId
+        ? `Connected to a Google Sheet (${sheetId.slice(0, 8)}…). Google access must be renewed when its short-lived session expires.`
+        : GOOGLE_OAUTH_CLIENT_ID.startsWith('YOUR_')
+          ? 'Direct Google sign-in is not configured yet. You can still connect using a family Apps Script URL.'
+          : 'Create a private family spreadsheet in your Google Drive and sync directly, without deploying a script.';
+      disconnectButton.classList.toggle('hidden', !sheetId);
+      connectButton.textContent = sheetId
+        ? '🔐 Sign in & Reconnect Google Sheet'
+        : '🔐 Sign in & Create Family Sheet';
+      if (setupNotice) {
+        setupNotice.classList.toggle('hidden', !GOOGLE_OAUTH_CLIENT_ID.startsWith('YOUR_'));
+      }
+    }
+
+    function disconnectGoogleSheet() {
+      if (!window.confirm('Disconnect this browser from its Google Sheet? The local family data will be kept, and the Sheet will not be deleted.')) return;
+
+      const sheetId = localStorage.getItem('parent_points_google_sheet_id');
+      if (sheetId) {
+        localStorage.removeItem('parent_points_sync_revision_v1');
+      }
+      localStorage.removeItem('parent_points_google_sheet_id');
+      googleAccessToken = null;
+      googleAccessTokenExpiresAt = 0;
+      updateGoogleSheetsConnectionStatus();
+      updateSyncStatus('Google Sheet disconnected · local data is still saved on this device');
+    }
+
+    function beginGoogleSheetSetup() {
+      requestGoogleSheetsAccess(async () => {
+        try {
+          const existingSheetId = localStorage.getItem('parent_points_google_sheet_id');
+          if (existingSheetId) {
+            await syncWithGoogleSheet(true);
+          } else {
+            const foundSheets = await findFamilyGoogleSheets();
+            const selectedSheetId = chooseFamilyGoogleSheet(foundSheets);
+            if (selectedSheetId === null) return;
+            if (selectedSheetId) {
+              localStorage.setItem('parent_points_google_sheet_id', selectedSheetId);
+              updateGoogleSheetsConnectionStatus();
+              await syncWithGoogleSheet(true);
+            } else {
+              await createFamilyGoogleSheet();
+            }
+          }
+          dismissSetupOnboarding();
+          showToast('Google Sheets is connected for this family.', '☁️');
+          renderAdminView();
+        } catch(error) {
+          console.error('Google Sheets setup failed:', error);
+          showToast(`Google Sheets setup failed: ${error.message}`, '⚠️');
+        }
+      });
+    }
+
+    function requestGoogleSheetsAccess(onAuthorized) {
+      if (
+        !GOOGLE_OAUTH_CLIENT_ID ||
+        GOOGLE_OAUTH_CLIENT_ID.startsWith('YOUR_')
+      ) {
+        showToast('Google sign-in is not configured yet. The app owner must add a Google OAuth client ID.', '⚠️');
+        return;
+      }
+      if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
+        showToast('Google sign-in is still loading. Please try again in a moment.', '⚠️');
+        return;
+      }
+
+      pendingGoogleTokenAction = onAuthorized;
+      googleTokenClient = window.google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_OAUTH_CLIENT_ID,
+        scope: GOOGLE_SHEETS_SCOPE,
+        callback: response => {
+          if (!response || response.error || !response.access_token) {
+            pendingGoogleTokenAction = null;
+            googleAccessToken = null;
+            showToast(`Google authorization failed${response && response.error ? `: ${response.error}` : '.'}`, '⚠️');
+            return;
+          }
+          googleAccessToken = response.access_token;
+          googleAccessTokenExpiresAt = Date.now() + Math.max(0, Number(response.expires_in || 0) - 60) * 1000;
+          const action = pendingGoogleTokenAction;
+          pendingGoogleTokenAction = null;
+          if (action) action();
+        },
+        error_callback: error => {
+          pendingGoogleTokenAction = null;
+          console.error('Google sign-in popup failed:', error);
+          showToast('Google sign-in was closed or blocked. Allow pop-ups and try again.', '⚠️');
+        }
+      });
+      googleTokenClient.requestAccessToken();
+    }
+
+    async function createFamilyGoogleSheet() {
+      if (localDataCorrupt) {
+        throw new Error('Unreadable local data must be recovered before creating a Sheet.');
+      }
+      updateSyncStatus('Creating your family Google Sheet…');
+      const createResponse = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${googleAccessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          properties: { title: GOOGLE_FAMILY_SHEET_TITLE },
+          sheets: [{ properties: { title: 'AppData', gridProperties: { rowCount: 1, columnCount: 2 } } }]
+        })
+      });
+      const created = await readGoogleApiResponse(createResponse);
+      if (!created.spreadsheetId) {
+        throw new Error('Google created a response without a spreadsheet ID.');
+      }
+
+      const sheetId = created.spreadsheetId;
+      localStorage.removeItem('parent_points_sync_url');
+      localStorage.removeItem('parent_points_sync_revision_v1');
+      localStorage.setItem('parent_points_google_sheet_id', sheetId);
+      updateGoogleSheetsConnectionStatus();
+
+      const snapshot = JSON.stringify(appData);
+      await writeGoogleSheetSnapshot(sheetId, snapshot, 1);
+      storeSyncRevision(`google-sheets:${sheetId}`, 1);
+      localStorage.setItem('parent_points_data_v3', snapshot);
+      updateSyncStatus('Google Sheet created and initialized with this family’s data.');
+    }
+
+    async function findFamilyGoogleSheets() {
+      updateSyncStatus('Looking for this family’s Google Sheets…');
+      const query = `trashed = false and mimeType = 'application/vnd.google-apps.spreadsheet' and name = '${GOOGLE_FAMILY_SHEET_TITLE}'`;
+      const params = new URLSearchParams({
+        q: query,
+        spaces: 'drive',
+        pageSize: '100',
+        orderBy: 'modifiedTime desc',
+        fields: 'files(id,name,modifiedTime)'
+      });
+      const response = await fetch(`https://www.googleapis.com/drive/v3/files?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${googleAccessToken}` }
+      });
+      const result = await readGoogleApiResponse(response);
+      return Array.isArray(result.files) ? result.files : [];
+    }
+
+    function chooseFamilyGoogleSheet(sheets) {
+      if (sheets.length === 0) return '';
+
+      const choices = sheets.map((sheet, index) =>
+        `${index + 1}. ${sheet.name} · modified ${sheet.modifiedTime || 'date unavailable'}`
+      );
+      choices.push('0. Create a new family Sheet');
+      const selected = window.prompt(
+        `Google Sheets already created by this app were found in this Google account. Enter the number to connect:\n\n${choices.join('\n')}`,
+        '1'
+      );
+      if (selected === null) return null;
+
+      const choice = Number(selected);
+      if (!Number.isInteger(choice) || choice < 0 || choice > sheets.length) {
+        showToast('Enter one of the listed Sheet numbers.', '⚠️');
+        return null;
+      }
+      return choice === 0 ? '' : sheets[choice - 1].id;
+    }
+
+    async function readGoogleApiResponse(response) {
+      let result;
+      try {
+        result = await response.json();
+      } catch(error) {
+        throw new Error(`Google API returned an unreadable response (HTTP ${response.status}).`);
+      }
+      if (!response.ok) {
+        const message = result && result.error && result.error.message;
+        throw new Error(message || `Google API request failed (HTTP ${response.status}).`);
+      }
+      return result;
+    }
+
+    async function readGoogleSheetSnapshot(sheetId) {
+      const range = encodeURIComponent('AppData!A1:B1');
+      const response = await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(sheetId)}/values/${range}`,
+        { headers: { Authorization: `Bearer ${googleAccessToken}` } }
+      );
+      const result = await readGoogleApiResponse(response);
+      const values = result.values && result.values[0] ? result.values[0] : [];
+      const rawData = values[0] || '';
+      const rawRevision = values[1] || 0;
+      const revision = Number(rawRevision);
+      if (!Number.isSafeInteger(revision) || revision < 0) {
+        throw new Error('The Google Sheet sync revision is invalid.');
+      }
+
+      let data = null;
+      if (rawData) {
+        try {
+          data = JSON.parse(rawData);
+        } catch(error) {
+          throw new Error('The app data in the Google Sheet is not valid JSON.');
+        }
+        if (!isValidAppData(data)) {
+          throw new Error('The app data in the Google Sheet has an invalid structure.');
+        }
+      }
+      return { data, revision };
+    }
+
+    async function writeGoogleSheetSnapshot(sheetId, snapshot, revision) {
+      const range = encodeURIComponent('AppData!A1:B1');
+      const response = await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(sheetId)}/values/${range}?valueInputOption=RAW`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${googleAccessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            majorDimension: 'ROWS',
+            values: [[snapshot, revision]]
+          })
+        }
+      );
+      await readGoogleApiResponse(response);
+
+      const verified = await readGoogleSheetSnapshot(sheetId);
+      if (JSON.stringify(verified.data) !== snapshot || verified.revision !== revision) {
+        return { synced: false, result: verified };
+      }
+      storeSyncRevision(`google-sheets:${sheetId}`, verified.revision);
+      const time = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      updateSyncStatus(`Synced and verified with Google Sheets · ${time}`);
+      return { synced: true, result: verified };
     }
 
     function updateSyncStatus(message) {
@@ -2454,8 +2758,12 @@
     }
 
     function requestSyncNow() {
+      if (localStorage.getItem('parent_points_google_sheet_id')) {
+        requestGoogleSheetsAccess(() => syncWithGoogleSheet(true));
+        return;
+      }
       if (!localStorage.getItem('parent_points_sync_url')) {
-        showToast('Add your Google Apps Script URL in Admin to sync.', '☁️');
+        showToast('Choose a Google Sheets sync option in Admin.', '☁️');
         requireParentPin(openParentAdminDirect);
         return;
       }
@@ -2571,7 +2879,11 @@
 
     function syncWithGoogleSheet(forcePull = false, overwriteRemote = false) {
       const operation = syncQueue.then(() =>
-        overwriteRemote ? performFullResetSync() : performSyncWithGoogleSheet(forcePull)
+        localStorage.getItem('parent_points_google_sheet_id')
+          ? performGoogleSheetApiSync(forcePull, overwriteRemote)
+          : overwriteRemote
+            ? performFullResetSync()
+            : performSyncWithGoogleSheet(forcePull)
       );
       syncQueue = operation.catch(error => {
         console.error('Unexpected Google Sheets sync failure:', error);
@@ -2579,6 +2891,103 @@
         showToast('Cloud sync failed. Your changes are still saved on this device.', '⚠️');
       });
       return syncQueue;
+    }
+
+    async function performGoogleSheetApiSync(forcePull = false, overwriteRemote = false) {
+      const sheetId = localStorage.getItem('parent_points_google_sheet_id');
+      if (!sheetId) return;
+      if (!googleAccessToken || Date.now() >= googleAccessTokenExpiresAt) {
+        googleAccessToken = null;
+        googleAccessTokenExpiresAt = 0;
+        updateSyncStatus('Google access needs renewal · tap Sync now and sign in again');
+        return;
+      }
+      if (localDataCorrupt && !forcePull && !overwriteRemote) {
+        updateSyncStatus('Recovery needed · local data is unreadable; cloud uploads are paused');
+        return;
+      }
+
+      updateSyncStatus('Checking Google Sheets…');
+      const remote = await readGoogleSheetSnapshot(sheetId);
+      const remoteSnapshot = remote.data === null ? null : JSON.stringify(remote.data);
+      const localSnapshot = JSON.stringify(appData);
+      const revisionKey = `google-sheets:${sheetId}`;
+      const savedRevision = getStoredSyncRevision(revisionKey);
+
+      if (overwriteRemote) {
+        const upload = await writeGoogleSheetSnapshot(sheetId, localSnapshot, remote.revision + 1);
+        if (!upload.synced) reportSyncConflict();
+        return;
+      }
+
+      if (localDataCorrupt) {
+        if (!remote.data) {
+          updateSyncStatus('Recovery needed · Google Sheet is empty; unreadable local data was not uploaded');
+          return;
+        }
+        const restore = window.confirm('This device’s saved data could not be read. Choose OK to restore from Google Sheets, or Cancel to leave it unchanged. No local data will be uploaded.');
+        if (!restore) {
+          updateSyncStatus('Recovery needed · local data kept; no cloud data was changed');
+          return;
+        }
+        localStorage.setItem('parent_points_data_v3', JSON.stringify(remote.data));
+        storeSyncRevision(revisionKey, remote.revision);
+        appData = remote.data;
+        localDataCorrupt = false;
+        corruptDataBackupSaved = true;
+        renderSyncedData();
+        updateSyncStatus('Restored from Google Sheets');
+        return;
+      }
+
+      if (remote.data === null) {
+        const upload = await writeGoogleSheetSnapshot(sheetId, localSnapshot, remote.revision + 1);
+        if (!upload.synced) reportSyncConflict();
+        return;
+      }
+
+      if (forcePull) {
+        if (localSnapshot === remoteSnapshot) {
+          storeSyncRevision(revisionKey, remote.revision);
+          updateSyncStatus('Up to date with Google Sheets');
+          return;
+        }
+        const useRemote = window.confirm('The Google Sheet and this device have different data. Choose OK to replace this device’s data with the Sheet, or Cancel to keep this device’s data and send it to the Sheet.');
+        if (useRemote) {
+          localStorage.setItem('parent_points_data_v3', remoteSnapshot);
+          storeSyncRevision(revisionKey, remote.revision);
+          appData = remote.data;
+          renderSyncedData();
+          updateSyncStatus('Loaded from Google Sheets');
+          return;
+        }
+        const upload = await writeGoogleSheetSnapshot(sheetId, localSnapshot, remote.revision + 1);
+        if (!upload.synced) reportSyncConflict();
+        return;
+      }
+
+      if (savedRevision === null) {
+        if (localSnapshot === remoteSnapshot) {
+          storeSyncRevision(revisionKey, remote.revision);
+          updateSyncStatus('Up to date with Google Sheets');
+        } else {
+          reportSyncConflict();
+        }
+        return;
+      }
+
+      if (remote.revision !== savedRevision || localSnapshot === remoteSnapshot) {
+        if (localSnapshot === remoteSnapshot) {
+          storeSyncRevision(revisionKey, remote.revision);
+          updateSyncStatus('Up to date with Google Sheets');
+        } else {
+          reportSyncConflict();
+        }
+        return;
+      }
+
+      const upload = await writeGoogleSheetSnapshot(sheetId, localSnapshot, remote.revision + 1);
+      if (!upload.synced) reportSyncConflict();
     }
 
     async function performFullResetSync() {
@@ -2758,6 +3167,7 @@
       document.addEventListener('pointercancel', cancelListReorder);
       loadData();
       renderPointsBoard();
+      updateGoogleSheetsConnectionStatus();
       if (localDataCorrupt) {
         showToast(
           corruptDataBackupSaved
@@ -2767,6 +3177,9 @@
         );
       }
       syncWithGoogleSheet(true);
+      if (firstRunSetupPending) {
+        document.getElementById('setupOnboardingModal').classList.remove('hidden');
+      }
     });
   </script>
 </body>
