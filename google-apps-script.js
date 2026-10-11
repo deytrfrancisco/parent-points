@@ -1,6 +1,6 @@
-// Replace the existing Apps Script code with this file's contents.
+// Replace SPREADSHEET_ID with the ID of your own Google spreadsheet before deploying.
 // App data stays in AppData!A1; AppData!B1 stores the revision used for conflict checks.
-const SPREADSHEET_ID = '1DsJwwajJxYhTh9F8-4_QlaN7iQzgjF-ZC4YNww9LXO4';
+const SPREADSHEET_ID = 'PASTE_YOUR_SPREADSHEET_ID_HERE';
 const DATA_SHEET_NAME = 'AppData';
 const DATA_RANGE = 'A1:B1';
 
